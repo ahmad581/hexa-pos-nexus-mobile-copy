@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Hexa POS Nexus",
+    "slug": "hexa-pos-nexus-mobile",
+    "version": "0.0.1",
+    "entry": "./index.js",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTabletMode": true,
+      "bundleIdentifier": "com.hexaTech.hexapos"
+    },
+    "android": {
+      "package": "com.hexaTech.hexapos",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a1f2e"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "sdkVersion": "54.0.0",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "plugins": [
+      "expo-web-browser",
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6e880ab1-a653-428f-8ba5-0df75dd02e64"
+      }
+    }
+  }
+}
