@@ -1,44 +1,55 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING } from '../theme';
+import { fetchDeliveryOrders, fetchCurrentBranchId } from '../services/orderService';
 
 type OrderInDelivery = {
   id: string;
   orderId: string;
   customer: string;
   driver: string;
-  items: number;
   total: number;
   pickupTime: string;
   estimatedDelivery: string;
 };
 
-const MOCK_IN_DELIVERY_ORDERS: OrderInDelivery[] = [
-  {
-    id: '1',
-    orderId: 'ORD-004',
-    customer: 'Alice Brown',
-    driver: 'Michael Chen',
-    items: 4,
-    total: 67.75,
-    pickupTime: '2024-05-18 12:15',
-    estimatedDelivery: '2024-05-18 13:00',
-  },
-  {
-    id: '2',
-    orderId: 'ORD-005',
-    customer: 'Charlie Wilson',
-    driver: 'Sarah Johnson',
-    items: 3,
-    total: 54.30,
-    pickupTime: '2024-05-18 12:30',
-    estimatedDelivery: '2024-05-18 13:15',
-  },
-];
-
 const OrdersInDeliveryScreen = () => {
-  const [orders] = useState<OrderInDelivery[]>(MOCK_IN_DELIVERY_ORDERS);
+  const [orders, setOrders] = useState<OrderInDelivery[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadOrders = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const branchId = await fetchCurrentBranchId();
+        if (!branchId) {
+          throw new Error('Branch context is missing. Cannot load delivery orders.');
+        }
+
+        const rows = await fetchDeliveryOrders('in_delivery', branchId);
+        const mappedOrders = rows.map((row) => ({
+          id: row.id,
+          orderId: row.order_number || row.id,
+          customer: row.customer_name || 'Customer',
+          driver: row.driver_id ? 'Assigned' : 'Unassigned',
+          total: Number(row.total_amount ?? 0),
+          pickupTime: row.created_at ? new Date(row.created_at).toLocaleString() : '',
+          estimatedDelivery: row.delivered_at || row.completed_at || 'TBD',
+        }));
+        setOrders(mappedOrders);
+      } catch (err: any) {
+        setError(err.message || 'Unable to load delivery orders');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadOrders();
+  }, []);
 
   const renderOrderItem = ({ item }: { item: OrderInDelivery }) => (
     <TouchableOpacity style={styles.orderCard} activeOpacity={0.7}>
@@ -63,6 +74,23 @@ const OrdersInDeliveryScreen = () => {
     </TouchableOpacity>
   );
 
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <MaterialIcons name="local-shipping" size={24} color={COLORS.info} />
+          <View style={styles.headerText}>
+            <Text style={styles.headerTitle}>Orders in Delivery</Text>
+            <Text style={styles.headerSubtitle}>Loading orders…</Text>
+          </View>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary.main} />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -72,13 +100,20 @@ const OrdersInDeliveryScreen = () => {
           <Text style={styles.headerSubtitle}>{orders.length} orders on the way</Text>
         </View>
       </View>
-      <FlatList
-        data={orders}
-        renderItem={renderOrderItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={orders}
+          renderItem={renderOrderItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={<Text style={styles.emptyText}>No delivery orders currently en route.</Text>}
+        />
+      )}
     </View>
   );
 };
@@ -163,6 +198,28 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.fontSize.xs,
     color: COLORS.text.tertiary,
     marginLeft: SPACING.xs,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.lg,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: TYPOGRAPHY.fontSize.sm,
+    textAlign: 'center',
+  },
+  emptyText: {
+    color: COLORS.text.secondary,
+    fontSize: TYPOGRAPHY.fontSize.sm,
+    textAlign: 'center',
+    marginTop: SPACING.lg,
   },
 });
 

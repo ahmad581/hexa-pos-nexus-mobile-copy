@@ -1,70 +1,53 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING } from '../theme';
+import { fetchDeliveryOrders, fetchCurrentBranchId } from '../services/orderService';
 
 type DeliveredOrder = {
   id: string;
   orderId: string;
   customer: string;
   driver: string;
-  items: number;
   total: number;
   deliveredAt: string;
-  rating?: number;
 };
 
-const MOCK_DELIVERED_ORDERS: DeliveredOrder[] = [
-  {
-    id: '1',
-    orderId: 'ORD-101',
-    customer: 'Emma Davis',
-    driver: 'John Smith',
-    items: 2,
-    total: 38.50,
-    deliveredAt: '2024-05-18 09:30',
-    rating: 5,
-  },
-  {
-    id: '2',
-    orderId: 'ORD-102',
-    customer: 'Frank Miller',
-    driver: 'Sarah Johnson',
-    items: 4,
-    total: 72.00,
-    deliveredAt: '2024-05-18 10:15',
-    rating: 4,
-  },
-  {
-    id: '3',
-    orderId: 'ORD-103',
-    customer: 'Grace Lee',
-    driver: 'Michael Chen',
-    items: 3,
-    total: 56.75,
-    deliveredAt: '2024-05-18 11:00',
-    rating: 5,
-  },
-];
-
 const DeliveredOrdersScreen = () => {
-  const [orders] = useState<DeliveredOrder[]>(MOCK_DELIVERED_ORDERS);
+  const [orders, setOrders] = useState<DeliveredOrder[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const renderStars = (rating: number | undefined) => {
-    if (!rating) return null;
-    return (
-      <View style={styles.ratingContainer}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <MaterialIcons
-            key={star}
-            name={star <= rating ? 'star' : 'star-outline'}
-            size={14}
-            color={COLORS.warning}
-          />
-        ))}
-      </View>
-    );
-  };
+  useEffect(() => {
+    const loadOrders = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const branchId = await fetchCurrentBranchId();
+        if (!branchId) {
+          throw new Error('Branch context is missing. Cannot load delivered orders.');
+        }
+
+        const rows = await fetchDeliveryOrders('delivered', branchId);
+        const mappedOrders = rows.map((row) => ({
+          id: row.id,
+          orderId: row.order_number || row.id,
+          customer: row.customer_name || 'Customer',
+          driver: row.driver_id ? 'Assigned' : 'Unassigned',
+          total: Number(row.total_amount ?? 0),
+          deliveredAt: row.delivered_at || row.completed_at || '',
+        }));
+        setOrders(mappedOrders);
+      } catch (err: any) {
+        setError(err.message || 'Unable to load delivered orders');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadOrders();
+  }, []);
 
   const renderOrderItem = ({ item }: { item: DeliveredOrder }) => (
     <TouchableOpacity style={styles.orderCard} activeOpacity={0.7}>
@@ -78,13 +61,29 @@ const DeliveredOrdersScreen = () => {
       </View>
       <View style={styles.orderFooter}>
         <View style={styles.footerLeft}>
-          <Text style={styles.itemsCount}>{item.items} items</Text>
+          <Text style={styles.itemsCount}>Delivered order</Text>
           <Text style={styles.deliveredAt}>{item.deliveredAt}</Text>
         </View>
-        {renderStars(item.rating)}
       </View>
     </TouchableOpacity>
   );
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <MaterialIcons name="check-circle" size={24} color={COLORS.success} />
+          <View style={styles.headerText}>
+            <Text style={styles.headerTitle}>Delivered Orders</Text>
+            <Text style={styles.headerSubtitle}>Loading orders…</Text>
+          </View>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary.main} />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -95,13 +94,20 @@ const DeliveredOrdersScreen = () => {
           <Text style={styles.headerSubtitle}>{orders.length} orders completed</Text>
         </View>
       </View>
-      <FlatList
-        data={orders}
-        renderItem={renderOrderItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={orders}
+          renderItem={renderOrderItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={<Text style={styles.emptyText}>No delivered delivery orders found.</Text>}
+        />
+      )}
     </View>
   );
 };
@@ -191,9 +197,27 @@ const styles = StyleSheet.create({
     color: COLORS.text.tertiary,
     marginTop: SPACING.xs,
   },
-  ratingContainer: {
-    flexDirection: 'row',
-    gap: SPACING.xs,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.lg,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: TYPOGRAPHY.fontSize.sm,
+    textAlign: 'center',
+  },
+  emptyText: {
+    color: COLORS.text.secondary,
+    fontSize: TYPOGRAPHY.fontSize.sm,
+    textAlign: 'center',
+    marginTop: SPACING.lg,
   },
 });
 

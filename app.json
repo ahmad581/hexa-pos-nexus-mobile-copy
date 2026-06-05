@@ -9,7 +9,10 @@
     ],
     "ios": {
       "supportsTabletMode": true,
-      "bundleIdentifier": "com.hexaTech.hexapos"
+      "bundleIdentifier": "com.hexaTech.hexapos",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.hexaTech.hexapos",

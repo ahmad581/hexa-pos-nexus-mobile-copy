@@ -1,46 +1,51 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING } from '../theme';
+import { fetchDeliveryOrders, fetchCurrentBranchId } from '../services/orderService';
 
 type PendingOrder = {
   id: string;
   orderId: string;
   customer: string;
-  items: number;
   total: number;
   createdAt: string;
 };
 
-const MOCK_PENDING_ORDERS: PendingOrder[] = [
-  {
-    id: '1',
-    orderId: 'ORD-001',
-    customer: 'John Doe',
-    items: 3,
-    total: 45.99,
-    createdAt: '2024-05-18 10:30',
-  },
-  {
-    id: '2',
-    orderId: 'ORD-002',
-    customer: 'Jane Smith',
-    items: 5,
-    total: 89.50,
-    createdAt: '2024-05-18 10:45',
-  },
-  {
-    id: '3',
-    orderId: 'ORD-003',
-    customer: 'Bob Johnson',
-    items: 2,
-    total: 32.25,
-    createdAt: '2024-05-18 11:00',
-  },
-];
-
 const PendingOrdersScreen = () => {
-  const [orders] = useState<PendingOrder[]>(MOCK_PENDING_ORDERS);
+  const [orders, setOrders] = useState<PendingOrder[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadOrders = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const branchId = await fetchCurrentBranchId();
+        if (!branchId) {
+          throw new Error('Branch context is missing. Cannot load delivery orders.');
+        }
+
+        const rows = await fetchDeliveryOrders('pending', branchId);
+        const mappedOrders = rows.map((row) => ({
+          id: row.id,
+          orderId: row.order_number || row.id,
+          customer: row.customer_name || 'Customer',
+          total: Number(row.total_amount ?? 0),
+          createdAt: row.created_at || '',
+        }));
+        setOrders(mappedOrders);
+      } catch (err: any) {
+        setError(err.message || 'Unable to load pending delivery orders');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadOrders();
+  }, []);
 
   const renderOrderItem = ({ item }: { item: PendingOrder }) => (
     <TouchableOpacity style={styles.orderCard} activeOpacity={0.7}>
@@ -52,11 +57,28 @@ const PendingOrdersScreen = () => {
         <Text style={styles.total}>${item.total.toFixed(2)}</Text>
       </View>
       <View style={styles.orderFooter}>
-        <Text style={styles.itemsCount}>{item.items} items</Text>
+        <Text style={styles.itemsCount}>Delivery order</Text>
         <Text style={styles.createdAt}>{item.createdAt}</Text>
       </View>
     </TouchableOpacity>
   );
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <MaterialIcons name="pending-actions" size={24} color={COLORS.primary.main} />
+          <View style={styles.headerText}>
+            <Text style={styles.headerTitle}>Pending Orders</Text>
+            <Text style={styles.headerSubtitle}>Loading orders…</Text>
+          </View>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary.main} />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -67,13 +89,20 @@ const PendingOrdersScreen = () => {
           <Text style={styles.headerSubtitle}>{orders.length} orders waiting</Text>
         </View>
       </View>
-      <FlatList
-        data={orders}
-        renderItem={renderOrderItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={orders}
+          renderItem={renderOrderItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={<Text style={styles.emptyText}>No pending delivery orders found.</Text>}
+        />
+      )}
     </View>
   );
 };
@@ -150,6 +179,28 @@ const styles = StyleSheet.create({
   createdAt: {
     fontSize: TYPOGRAPHY.fontSize.xs,
     color: COLORS.text.tertiary,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.lg,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: TYPOGRAPHY.fontSize.sm,
+    textAlign: 'center',
+  },
+  emptyText: {
+    color: COLORS.text.secondary,
+    fontSize: TYPOGRAPHY.fontSize.sm,
+    textAlign: 'center',
+    marginTop: SPACING.lg,
   },
 });
 
