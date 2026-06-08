@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import MaterialIcon from '../lib/Icon';
 import { COLORS, TYPOGRAPHY, SPACING } from '../theme';
 import { fetchDeliveryOrders, fetchCurrentBranchId } from '../services/orderService';
 
@@ -63,11 +63,11 @@ const OrdersInDeliveryScreen = () => {
       </View>
       <View style={styles.orderFooter}>
         <View style={styles.footerItem}>
-          <MaterialIcons name="schedule" size={14} color={COLORS.text.tertiary} />
+          <MaterialIcon name="schedule" size={14} color={COLORS.text.tertiary} />
           <Text style={styles.footerText}>{item.pickupTime}</Text>
         </View>
         <View style={styles.footerItem}>
-          <MaterialIcons name="local-shipping" size={14} color={COLORS.info} />
+          <MaterialIcon name="local-shipping" size={14} color={COLORS.info} />
           <Text style={styles.footerText}>{item.estimatedDelivery}</Text>
         </View>
       </View>
@@ -78,7 +78,7 @@ const OrdersInDeliveryScreen = () => {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <MaterialIcons name="local-shipping" size={24} color={COLORS.info} />
+          <MaterialIcon name="local-shipping" size={24} color={COLORS.info} />
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>Orders in Delivery</Text>
             <Text style={styles.headerSubtitle}>Loading orders…</Text>
@@ -94,7 +94,7 @@ const OrdersInDeliveryScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <MaterialIcons name="local-shipping" size={24} color={COLORS.info} />
+        <MaterialIcon name="local-shipping" size={24} color={COLORS.info} />
         <View style={styles.headerText}>
           <Text style={styles.headerTitle}>Orders in Delivery</Text>
           <Text style={styles.headerSubtitle}>{orders.length} orders on the way</Text>

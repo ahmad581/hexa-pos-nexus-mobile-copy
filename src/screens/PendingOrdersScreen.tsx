@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import MaterialIcon from '../lib/Icon';
 import { COLORS, TYPOGRAPHY, SPACING } from '../theme';
 import { fetchDeliveryOrders, fetchCurrentBranchId } from '../services/orderService';
 
@@ -67,7 +67,7 @@ const PendingOrdersScreen = () => {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <MaterialIcons name="pending-actions" size={24} color={COLORS.primary.main} />
+          <MaterialIcon name="pending-actions" size={24} color={COLORS.primary.main} />
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>Pending Orders</Text>
             <Text style={styles.headerSubtitle}>Loading orders…</Text>
@@ -83,7 +83,7 @@ const PendingOrdersScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <MaterialIcons name="pending-actions" size={24} color={COLORS.primary.main} />
+          <MaterialIcon name="pending-actions" size={24} color={COLORS.primary.main} />
         <View style={styles.headerText}>
           <Text style={styles.headerTitle}>Pending Orders</Text>
           <Text style={styles.headerSubtitle}>{orders.length} orders waiting</Text>

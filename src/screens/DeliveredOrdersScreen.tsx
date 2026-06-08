@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import MaterialIcon from '../lib/Icon';
 import { COLORS, TYPOGRAPHY, SPACING } from '../theme';
 import { fetchDeliveryOrders, fetchCurrentBranchId } from '../services/orderService';
 
@@ -72,7 +72,7 @@ const DeliveredOrdersScreen = () => {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <MaterialIcons name="check-circle" size={24} color={COLORS.success} />
+          <MaterialIcon name="check-circle" size={24} color={COLORS.success} />
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>Delivered Orders</Text>
             <Text style={styles.headerSubtitle}>Loading orders…</Text>
@@ -88,7 +88,7 @@ const DeliveredOrdersScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <MaterialIcons name="check-circle" size={24} color={COLORS.success} />
+        <MaterialIcon name="check-circle" size={24} color={COLORS.success} />
         <View style={styles.headerText}>
           <Text style={styles.headerTitle}>Delivered Orders</Text>
           <Text style={styles.headerSubtitle}>{orders.length} orders completed</Text>

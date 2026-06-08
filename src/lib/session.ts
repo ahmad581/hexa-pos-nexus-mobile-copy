@@ -1,16 +1,17 @@
 import { supabase } from './supabase';
-import * as Location from 'expo-location';
-import * as Device from 'expo-device';
 import { distanceMeters } from './geo';
+import { requestGeolocationPermission, getCurrentPosition, getDeviceId } from './locationDeviceAdapter';
 
 export async function toggleCheckInOut(employeeId: string, branchId: string, method: 'qr'|'biometric'|'manual') {
   // 1. Geofence verify
   const { data: branch } = await supabase.from('branches')
     .select('latitude, longitude, geofence_radius_m').eq('id', branchId).single();
-  const { status } = await Location.requestForegroundPermissionsAsync();
+
+  const status = await requestGeolocationPermission();
   if (status !== 'granted') throw new Error('Location required');
-  const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-  if (branch?.latitude && distanceMeters(pos.coords, branch) > (branch.geofence_radius_m ?? 150)) {
+
+  const pos = await getCurrentPosition();
+  if (branch?.latitude && distanceMeters(pos.coords as any, branch) > (branch.geofence_radius_m ?? 150)) {
     throw new Error('You are not at the branch');
   }
 
@@ -26,11 +27,13 @@ export async function toggleCheckInOut(employeeId: string, branchId: string, met
       .update({ check_out_time: new Date().toISOString() }).eq('id', open.id);
     return 'checked_out';
   }
+
+  const deviceId = await getDeviceId();
   await supabase.from('employee_work_sessions').insert({
     employee_id: employeeId, branch_id: branchId,
     check_in_time: new Date().toISOString(),
-    check_in_lat: pos.coords.latitude, check_in_lng: pos.coords.longitude,
-    check_in_method: method, device_id: Device.osInternalBuildId,
+    check_in_lat: (pos.coords as any).latitude, check_in_lng: (pos.coords as any).longitude,
+    check_in_method: method, device_id: deviceId,
   });
   return 'checked_in';
 }

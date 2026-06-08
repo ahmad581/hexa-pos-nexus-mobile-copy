@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { API_BASE_URL } from '../constants';
 
 export type SupabaseDeliveryOrder = {
   id: string;
@@ -70,6 +71,20 @@ export async function fetchDeliveryOrders(
   const { data, error } = await query;
 
   if (error) {
+    // Try REST fallback for web if Supabase call fails (CORS/backend availability)
+    if (API_BASE_URL) {
+      try {
+        const params = new URLSearchParams();
+        params.set('screen', screen);
+        if (branchId) params.set('branchId', branchId);
+        const res = await fetch(`${API_BASE_URL}/orders?${params.toString()}`, { mode: 'cors' });
+        if (!res.ok) throw new Error(`API Error: ${res.status}`);
+        const json = await res.json();
+        return json as SupabaseDeliveryOrder[];
+      } catch (e) {
+        throw error;
+      }
+    }
     throw error;
   }
 

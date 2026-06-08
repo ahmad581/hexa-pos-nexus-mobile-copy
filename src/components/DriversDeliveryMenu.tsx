@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import MaterialIcon from '../lib/Icon';
 import { COLORS, TYPOGRAPHY, SPACING } from '../theme';
 import { supabase } from '../services/supabase';
 
@@ -122,7 +122,7 @@ const DriversDeliveryMenu: React.FC<DriversDeliveryMenuProps> = ({ userRole = 'm
         activeOpacity={0.7}
       >
         <View style={styles.headerContent}>
-          <MaterialIcons name="local-shipping" size={24} color={COLORS.primary.main} />
+          <MaterialIcon name="local-shipping" size={24} color={COLORS.primary.main} />
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>Driver Deliveries</Text>
             <Text style={styles.headerSubtitle}>
@@ -130,7 +130,7 @@ const DriversDeliveryMenu: React.FC<DriversDeliveryMenuProps> = ({ userRole = 'm
             </Text>
           </View>
         </View>
-        <MaterialIcons
+        <MaterialIcon
           name={isMenuOpen ? 'expand-less' : 'expand-more'}
           size={24}
           color={COLORS.text.secondary}
@@ -193,7 +193,7 @@ const DriversDeliveryMenu: React.FC<DriversDeliveryMenuProps> = ({ userRole = 'm
                     <Text style={styles.statItemLabel}>Earnings</Text>
                     <Text style={styles.statItemValue}>${driver.totalEarnings}</Text>
                   </View>
-                  <MaterialIcons
+                  <MaterialIcon
                     name={expandedDriverId === driver.id ? 'expand-less' : 'expand-more'}
                     size={20}
                     color={COLORS.text.secondary}
