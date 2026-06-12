@@ -46,8 +46,8 @@ export default function MainTabNavigator() {
 
   const role = (profile?.primary_role || '')?.toLowerCase();
 
-  const isManager = useMemo(() => role === 'manager' || role === 'super_manager' || role === 'systemmaster', [role]);
-  const isSuperManager = useMemo(() => role === 'super_manager', [role]);
+  const isManager = useMemo(() => role === 'manager' || role === 'supermanager' || role === 'systemmaster', [role]);
+  const isSuperManager = useMemo(() => role === 'supermanager', [role]);
   const isHallManager = useMemo(() => role.includes('hall'), [role]);
   const isDriver = useMemo(() => role.includes('driver'), [role]);
 

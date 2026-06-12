@@ -89,7 +89,6 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
-    console.log('handleLogin called', { username: formState.username, loading: formState.isLoading });
     if (!validateForm()) {
       return;
     }
@@ -102,8 +101,6 @@ export default function LoginScreen() {
         email: formState.username,
         password: formState.password,
       });
-
-      console.log('supabase.signInWithPassword ->', { authData, authError });
 
       if (authError) {
         Alert.alert('Login Failed', authError.message || 'Invalid email or password');

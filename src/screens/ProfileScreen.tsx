@@ -110,8 +110,6 @@ const ProfileScreen = () => {
         'manual'
       );
 
-      console.log('toggleCheckInOut result:', result);
-
       // Refresh UI
       await refreshTodaySession();
       await loadRecentSessions(userData.employee_id);
