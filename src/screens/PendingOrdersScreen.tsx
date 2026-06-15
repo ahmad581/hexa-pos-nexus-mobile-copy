@@ -73,8 +73,11 @@ const PendingOrdersScreen = () => {
   }, []);
 
   useEffect(() => {
+    loadOrders();
     const unsubscribe = subscribeDeliveryOrders(loadOrders, 'pending');
-    return unsubscribe;
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
   }, [loadOrders]);
 
   const handleStatusChange = async (next: DeliveryStatus) => {

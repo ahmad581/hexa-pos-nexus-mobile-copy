@@ -73,8 +73,11 @@ const DeliveredOrdersScreen = () => {
   }, []);
 
   useEffect(() => {
+    loadOrders();
     const unsubscribe = subscribeDeliveryOrders(loadOrders, 'delivered');
-    return unsubscribe;
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
   }, [loadOrders]);
 
   const handleStatusChange = async (next: DeliveryStatus) => {
