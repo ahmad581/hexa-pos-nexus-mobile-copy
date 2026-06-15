@@ -18,6 +18,7 @@ import { useBranch } from '../hooks/useBranch';
 import { useRole } from '../hooks/useRole';
 import { useTranslation } from '../hooks/useTranslation';
 import { useOrder } from '../hooks';
+import { useRealtimeSubscription } from '../hooks/useRealtimeSubscription';
 
 import AddUnitSheet from '../components/tables/AddUnitSheet';
 import EditTableSheet from '../components/tables/EditTableSheet';
@@ -64,7 +65,22 @@ export default function TablesScreen() {
       if (error) throw error;
       return data || [];
     },
-    { enabled: !!branchId, refetchInterval: 10000 }
+    { enabled: !!branchId }
+  );
+
+  // Live updates — replaces the old 10s poll. Streams from Supabase Realtime,
+  // scoped to the current branch, and invalidates the corresponding queries.
+  useRealtimeSubscription(
+    'orders',
+    ['table-orders', branchId],
+    branchId ? `branch_id=eq.${branchId}` : undefined,
+    !!branchId,
+  );
+  useRealtimeSubscription(
+    'tables',
+    ['tables', branchId],
+    branchId ? `branch_id=eq.${branchId}` : undefined,
+    !!branchId,
   );
 
   const tablesWithOrders = useMemo(() => {
@@ -96,7 +112,8 @@ export default function TablesScreen() {
   }
 
   const handlePrimary = async (table: any) => {
-    // prepare local order state (UI only)
+    console.log('table: ', table);
+    
     try {
       order.setOrderType('dine-in');
       order.setSelectedTable(table);
@@ -107,9 +124,14 @@ export default function TablesScreen() {
       // ignore
     }
 
-    // navigate to Menu screen to take the order; include origin so Menu hook can set originRoute
     try {
-      (navigation as any).navigate('Menu', { tableNumber: table.table_number, origin: '/tables' });
+      console.log('table2: ', table);
+      
+      (navigation as any).navigate('Menu', {
+        tableId: table.id,
+        tableNumber: table.table_number,
+        origin: '/tables',
+      });
     } catch (e) {
       try { (navigation as any).navigate('Pending'); } catch (e) {}
     }
@@ -119,16 +141,11 @@ export default function TablesScreen() {
     const reserved = item.status === 'reserved' && item.reserved_for;
     const statusColor = (() => {
       switch (item.status) {
-        case 'available':
-          return '#10B981';
-        case 'occupied':
-          return '#EF4444';
-        case 'reserved':
-          return '#F59E0B';
-        case 'cleaning':
-          return '#3B82F6';
-        default:
-          return '#9CA3AF';
+        case 'available': return '#10B981';
+        case 'occupied':  return '#EF4444';
+        case 'reserved':  return '#F59E0B';
+        case 'cleaning':  return '#3B82F6';
+        default:          return '#9CA3AF';
       }
     })();
 
@@ -167,7 +184,7 @@ export default function TablesScreen() {
             <Text style={[styles.outlineText, !hasOrders(item.id) && styles.outlineTextDisabled]}>{t('tables.orderDetails','Order Details')}</Text>
           </Pressable>
 
-          <View style={styles.rowTwo}> 
+          <View style={styles.rowTwo}>
             <Pressable style={[styles.smallBtn, !hasOrders(item.id) && styles.disabled]} onPress={() => { setSelectedTable(item); setShowMove(true); }} disabled={!hasOrders(item.id)}>
               <Text style={[styles.smallBtnText, !hasOrders(item.id) && styles.smallBtnTextDisabled]}>{t('tables.move','Move')}</Text>
             </Pressable>
@@ -241,38 +258,8 @@ const styles = StyleSheet.create({
   smallBtn: { flex: 1, borderRadius: 8, paddingVertical: 10, alignItems: 'center', marginHorizontal: 4, backgroundColor: '#111827', borderWidth: 1, borderColor: '#374151' },
   smallBtnText: { color: '#fff', fontWeight: '600' },
   smallBtnTextDisabled: { color: '#9CA3AF' },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 28,
-    backgroundColor: '#10B981',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  headerBar: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: 'transparent',
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#10B981',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  addButtonText: {
-    color: '#fff',
-    marginLeft: 8,
-    fontWeight: '700',
-  },
+  fab: { position: 'absolute', right: 20, bottom: 28, backgroundColor: '#10B981', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 6, elevation: 6 },
+  headerBar: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'transparent' },
+  addButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#10B981', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, alignSelf: 'flex-start' },
+  addButtonText: { color: '#fff', marginLeft: 8, fontWeight: '700' },
 });

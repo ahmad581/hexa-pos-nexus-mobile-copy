@@ -6,119 +6,116 @@ export async function submitOrderMobile(opts: {
   selectedBranch: { id: string; name?: string } | null;
   selectedTable: string | null | { id?: string; table_number?: string };
   orderType: 'dine-in' | 'takeout' | 'delivery';
-  customerInfo?: { name?: string; phone?: string; address?: string; deliveryPlaceId?: string; deliveryFee?: number } | null;
+  customerInfo?: { name?: string; phone?: string; address?: string; deliveryPlaceId?: string; deliveryFee?: number };
   orderNotes?: string;
   currentOrder: CurrentOrderItem[];
   editingOrderId?: string | null;
 }): Promise<boolean> {
   try {
-    if (!opts.selectedBranch) {
-      console.error('submitOrderMobile: missing branch');
+    const { selectedBranch, selectedTable, orderType, customerInfo, orderNotes, currentOrder, editingOrderId } = opts;
+
+    if (!selectedBranch?.id || !currentOrder || currentOrder.length === 0) {
+      console.warn('submitOrderMobile: missing branch or empty order');
       return false;
     }
 
-    const itemsSubtotal = (opts.currentOrder || []).reduce((s, it) => s + (Number(it.price || 0) * (it.quantity || 1)), 0);
-    const deliveryFee = opts.orderType === 'delivery' ? (opts.customerInfo?.deliveryFee || 0) : 0;
+    const itemsSubtotal = currentOrder.reduce((s, i) => s + (Number(i.price) || 0) * (Number(i.quantity) || 0), 0);
+    const deliveryFee = orderType === 'delivery' ? Number(customerInfo?.deliveryFee) || 0 : 0;
     const total = itemsSubtotal + deliveryFee;
 
+    // Resolve table_id
     let tableId: string | null = null;
-    // Resolve table id if dine-in and selectedTable provided
-    if (opts.orderType === 'dine-in' && opts.selectedTable) {
-      if (typeof opts.selectedTable === 'object') {
-        tableId = (opts.selectedTable as any).id || null;
-        // if object provided but no id, try lookup by table_number property
-        if (!tableId && (opts.selectedTable as any).table_number) {
-          const tn = (opts.selectedTable as any).table_number;
-          const { data: tables, error: tErr } = await supabase.from('tables').select('id').eq('branch_id', opts.selectedBranch.id).eq('table_number', Number(tn)).limit(1);
-          if (tErr) {
-            console.error('submitOrderMobile: table lookup error', tErr);
-          } else if (tables && tables[0]) {
-            tableId = tables[0].id;
-          }
+    if (orderType === 'dine-in' && selectedTable) {
+      if (typeof selectedTable === 'object' && selectedTable !== null) {
+        if ((selectedTable as any).id) {
+          tableId = (selectedTable as any).id;
+        } else if ((selectedTable as any).table_number) {
+          const { data } = await supabase
+            .from('tables')
+            .select('id')
+            .eq('branch_id', selectedBranch.id)
+            .eq('table_number', (selectedTable as any).table_number)
+            .maybeSingle();
+          tableId = data?.id ?? null;
         }
-      } else if (/^[0-9]+$/.test(String(opts.selectedTable))) {
-        // lookup by branch_id + table_number
-        const { data: tables, error: tErr } = await supabase.from('tables').select('id').eq('branch_id', opts.selectedBranch.id).eq('table_number', Number(opts.selectedTable)).limit(1);
-        if (tErr) {
-          console.error('submitOrderMobile: table lookup error', tErr);
-        } else if (tables && tables[0]) {
-          tableId = tables[0].id;
-        }
+      } else {
+        const { data } = await supabase
+          .from('tables')
+          .select('id')
+          .eq('branch_id', selectedBranch.id)
+          .eq('table_number', selectedTable as string)
+          .maybeSingle();
+        tableId = data?.id ?? null;
       }
     }
 
-    if (opts.editingOrderId) {
-      // replace items for existing order
-      const editingId = opts.editingOrderId;
-      const { error: delErr } = await supabase.from('order_items').delete().eq('order_id', editingId);
-      if (delErr) {
-        console.error('submitOrderMobile: failed to delete existing order_items', delErr);
+    // Editing existing order
+    if (editingOrderId) {
+      await supabase.from('order_items').delete().eq('order_id', editingOrderId);
+      const items = currentOrder.map(i => ({
+        order_id: editingOrderId,
+        product_name: i.name || '',
+        unit_price: i.price,
+        quantity: i.quantity,
+        total_price: (Number(i.price) || 0) * (Number(i.quantity) || 0),
+        special_instructions: i.notes || null,
+      }));
+      const { error: itemsErr } = await supabase.from('order_items').insert(items);
+      if (itemsErr) {
+        console.error('submitOrderMobile: failed to update order_items', itemsErr);
         return false;
       }
-
-      if ((opts.currentOrder || []).length) {
-        const itemsPayload = opts.currentOrder.map((it) => ({ order_id: editingId, menu_item_id: it.id, quantity: it.quantity || 1, unit_price: it.price, special_instructions: it.notes || null }));
-        const { error: insertItemsErr } = await supabase.from('order_items').insert(itemsPayload);
-        if (insertItemsErr) {
-          console.error('submitOrderMobile: failed to insert order_items', insertItemsErr);
-          return false;
-        }
-      }
-
-      const { error: updErr } = await supabase.from('orders').update({ total_amount: total, notes: opts.orderNotes || null, updated_at: new Date().toISOString() }).eq('id', editingId);
-      if (updErr) {
-        console.error('submitOrderMobile: failed to update order', updErr);
-        return false;
-      }
-
-      if (tableId) {
-        await supabase.from('tables').update({ status: 'occupied' }).eq('id', tableId);
-      }
-
+      await supabase
+        .from('orders')
+        .update({
+          total_amount: total,
+          notes: orderNotes || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editingOrderId);
       return true;
     }
 
     // New order
-    const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}`;
     const payload: any = {
-      branch_id: opts.selectedBranch.id,
-      order_number: orderNumber,
-      table_id: tableId || null,
-      customer_name: opts.customerInfo?.name || null,
-      customer_phone: opts.customerInfo?.phone || null,
-      customer_address: opts.orderType === 'delivery' ? opts.customerInfo?.address || null : null,
-      delivery_place_id: opts.orderType === 'delivery' ? opts.customerInfo?.deliveryPlaceId || null : null,
-      delivery_fee: opts.orderType === 'delivery' ? (opts.customerInfo?.deliveryFee || 0) : 0,
-      notes: opts.orderNotes || null,
+      branch_id: selectedBranch.id,
+      order_number: `ORD-${Date.now().toString(36).toUpperCase()}`,
+      table_id: tableId,
+      customer_name: customerInfo?.name || null,
+      customer_phone: customerInfo?.phone || null,
+      customer_address: orderType === 'delivery' ? customerInfo?.address || null : null,
+      delivery_place_id: orderType === 'delivery' ? customerInfo?.deliveryPlaceId || null : null,
+      delivery_fee: deliveryFee,
+      notes: orderNotes || null,
       total_amount: total,
       status: 'pending',
       payment_status: 'pending',
-      created_at: new Date().toISOString(),
     };
 
-    const { data: insertedOrders, error: insErr } = await supabase.from('orders').insert([payload]).select().limit(1).single();
-    if (insErr) {
-      console.error('submitOrderMobile: failed to insert order', insErr);
+    console.log('[submitOrderMobile] inserting order with table_id=', payload.table_id, 'order_number=', payload.order_number);
+
+    const { data: orderData, error: orderError } = await supabase
+      .from('orders')
+      .insert(payload)
+      .select()
+      .single();
+
+    if (orderError || !orderData) {
+      console.error('submitOrderMobile: failed to insert order', orderError);
       return false;
     }
 
-    const orderId = (insertedOrders && insertedOrders.id) || (insertedOrders && insertedOrders[0] && insertedOrders[0].id) || null;
-    if (!orderId) {
-      console.error('submitOrderMobile: no order id returned');
-      return false;
-    }
-
-    if ((opts.currentOrder || []).length) {
-      const itemsPayload = opts.currentOrder.map((it) => ({
-        order_id: orderId,
-        menu_item_id: it.id,
-        product_name: it.name,
-        quantity: it.quantity || 1,
-        unit_price: it.price,
-        total_price: it.price * it.quantity,
-        special_instructions: it.notes || null,
+    const items = currentOrder.map(i => ({
+      order_id: orderData.id,
+      product_name: i.name || '',
+      unit_price: i.price,
+      quantity: i.quantity,
+      total_price: (Number(i.price) || 0) * (Number(i.quantity) || 0),
+      special_instructions: i.notes || null,
     }));
-      const { error: insertItemsErr } = await supabase.from('order_items').insert(itemsPayload);
+
+    if (items.length > 0) {
+      const { error: insertItemsErr } = await supabase.from('order_items').insert(items);
       if (insertItemsErr) {
         console.error('submitOrderMobile: failed to insert order_items', insertItemsErr);
         return false;

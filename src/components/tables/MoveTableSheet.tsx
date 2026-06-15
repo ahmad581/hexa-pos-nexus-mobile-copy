@@ -31,6 +31,9 @@ export default function MoveTableSheet({ visible, onClose, table, branchId, onMo
     try {
       const { error } = await supabase.from('orders').update({ table_id: targetId }).eq('table_id', table.id).in('status', ['pending', 'preparing', 'ready']);
       if (error) throw error;
+      await supabase.from('tables').update({ status: 'occupied' }).eq('id', targetId);
+      await supabase.from('tables').update({ status: 'available' }).eq('id', table.id);
+      queryClient.invalidateQueries({ queryKey: ['tables', branchId] });
       queryClient.invalidateQueries({ queryKey: ['table-orders', branchId] });
       onMoved && onMoved();
       onClose();

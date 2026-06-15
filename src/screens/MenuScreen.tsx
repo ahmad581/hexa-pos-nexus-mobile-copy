@@ -12,7 +12,6 @@ import { MenuItem, Category, Subcategory } from '../types/menu';
 
 export default function MenuScreen({ route, navigation }: any) {
   const _branchHook = useBranch() as any;
-  // `useBranch()` may return either the branch object directly or an object with `selectedBranch`
   const selectedBranch = _branchHook?.selectedBranch ?? _branchHook ?? null;
   const branchId = selectedBranch?.id || null;
   const { menuDesign } = useSettings();
@@ -31,7 +30,7 @@ export default function MenuScreen({ route, navigation }: any) {
     clearCurrentOrder,
   } = useOrder() as any;
 
-  const canManageMenu = false; // mobile read-only
+  const canManageMenu = false;
   const canMarkSoldOut = canManageMenu || (isCashier && isCashier());
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -72,7 +71,7 @@ export default function MenuScreen({ route, navigation }: any) {
       const o = (orderData || []).find((x: any) => x.category_value === v);
       return { value: v, label: (v || '').charAt(0).toUpperCase() + (v || '').slice(1), soldOut: o?.is_sold_out || false, display_order: o?.display_order || 999 } as Category;
     });
-    return merged.sort((a,b)=> (a.display_order||0) - (b.display_order||0) || a.label.localeCompare(b.label));
+    return merged.sort((a, b) => (a.display_order || 0) - (b.display_order || 0) || a.label.localeCompare(b.label));
   }, { enabled: !!branchId });
 
   const { data: subcategories = [] } = useQuery(['menu-subcategories', branchId], async () => {
@@ -85,23 +84,22 @@ export default function MenuScreen({ route, navigation }: any) {
     if (!selectedCategory && categories.length) setSelectedCategory(categories[0].value);
   }, [categories]);
 
-  // params handling for editingOrderId - accept route.params or query
   useEffect(() => {
     const params = (route && route.params) || {};
-    const editingOrderId = params.editingOrderId;
-    const tableNumber = params.tableNumber;
-    const origin = params.origin;
+    console.log('params: ', params);
+
+    const { editingOrderId, tableNumber, tableId, origin } = params;
+
     if (editingOrderId) {
       setOriginRoute('/orders');
       loadOrderForEditingById(editingOrderId);
     }
-    if (tableNumber && !selectedTable) {
-      // if navigated from tables, pre-select the table
+    if (tableNumber) {
       setOrderType('dine-in');
-      setSelectedTable({ table_number: tableNumber });
-      // prefer explicit origin param when present
-      if (origin) setOriginRoute(origin);
-      else setOriginRoute('/tables');
+      if (!selectedTable || selectedTable.table_number !== tableNumber || !selectedTable.id) {
+        setSelectedTable({ id: tableId ?? null, table_number: tableNumber });
+      }
+      setOriginRoute(origin || '/tables');
     } else if (origin) {
       setOriginRoute(origin);
     }
@@ -126,24 +124,71 @@ export default function MenuScreen({ route, navigation }: any) {
     if (!branchId) return Alert.alert('Missing branch');
     if (!currentOrder?.length) return Alert.alert('No items');
     try {
-      const total = currentOrder.reduce((s: number, it: any) => s + Number(it.price || 0) * (it.quantity || 1), 0);
-      const payload: any = { branch_id: branchId, total_amount: total, status: 'pending', created_at: new Date().toISOString() };
+      const total = currentOrder.reduce(
+        (s: number, it: any) => s + Number(it.price || 0) * (it.quantity || 1),
+        0,
+      );
+      const payload: any = {
+        branch_id: branchId,
+        order_number: `ORD-${Date.now().toString(36).toUpperCase()}`,
+        total_amount: total,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+      };
+      console.log('payload><><>', payload);
+      
       if (selectedTable) {
         const st = selectedTable as any;
-        if (st.id) payload.table_id = st.id;
+        let resolvedTableId: string | null = st.id ?? null;
+
+        if (!resolvedTableId && st.table_number != null) {
+          const { data: t } = await supabase
+            .from('tables')
+            .select('id')
+            .eq('branch_id', branchId)
+            .eq('table_number', String(st.table_number))
+            .maybeSingle();
+          resolvedTableId = t?.id ?? null;
+        }
+
+        console.log('[MenuScreen.submitOrder] resolved table_id=', resolvedTableId, 'from', st);
+        if (resolvedTableId) payload.table_id = resolvedTableId;
       }
-      const { data, error } = await supabase.from('orders').insert([payload]);
+
+      const { data: inserted, error } = await supabase
+        .from('orders')
+        .insert(payload)
+        .select()
+        .single();
       if (error) throw error;
-      // insert order items - best-effort
-      if (data && data[0] && currentOrder.length) {
-        const orderId = data[0].id;
-        const itemsPayload = currentOrder.map((it: any) => ({ order_id: orderId, menu_item_id: it.id, quantity: it.quantity || 1, unit_price: it.price }));
-        await supabase.from('order_items').insert(itemsPayload);
+
+      if (inserted?.id && currentOrder.length) {
+        const itemsPayload = currentOrder.map((it: any) => ({
+          order_id: inserted.id,
+          menu_item_id: it.id,
+          product_name: it.name || '',                            // ← add
+          quantity: it.quantity || 1,
+          unit_price: it.price,
+          total_price: Number(it.price || 0) * (it.quantity || 1), // ← add
+          special_instructions: it.notes || null,
+        }));
+        console.log('itemsPayload>>>>>', itemsPayload);
+        
+        const { error: itemsError } = await supabase.from('order_items').insert(itemsPayload);
+        if (itemsError) throw itemsError;
       }
-      queryClient.invalidateQueries({ queryKey: ['tables', branchId] });
-      queryClient.invalidateQueries({ queryKey: ['table-orders', branchId] });
+
+      if (payload.table_id) {
+        await supabase
+          .from('tables')
+          .update({ status: 'occupied' })
+          .eq('id', payload.table_id);
+      }
+
+      await queryClient.refetchQueries({ queryKey: ['table-orders', branchId] });
+      await queryClient.refetchQueries({ queryKey: ['tables', branchId] });
       clearCurrentOrder();
-      // navigate back to Tables tab
+
       navigation?.navigate?.('App', { screen: 'Tables' });
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to submit order');
@@ -157,7 +202,7 @@ export default function MenuScreen({ route, navigation }: any) {
       <View style={{ padding: 16 }}>
         {isInCall && activeCallInfo && (
           <StatusPill onClose={() => { endCall(); navigation?.replace?.('/call-center'); }}>
-            📞 {t('order.takingOrderFor','Taking order for')}: {activeCallInfo.customerName} ({activeCallInfo.phoneNumber})
+            📞 {t('order.takingOrderFor', 'Taking order for')}: {activeCallInfo.customerName} ({activeCallInfo.phoneNumber})
           </StatusPill>
         )}
       </View>
@@ -175,14 +220,34 @@ export default function MenuScreen({ route, navigation }: any) {
       />
 
       {width >= 1024 ? (
-        <View style={styles.sidePanel}><OrderSummarySheet visible={true} onClose={() => {}} order={currentOrder} origin={(route && route.params && route.params.origin) || null} /></View>
+        <View style={styles.sidePanel}>
+          <OrderSummarySheet
+            visible={true}
+            onClose={() => {}}
+            order={currentOrder}
+            origin={(route && route.params && route.params.origin) || null}
+            onSubmit={submitOrder}
+            selectedTable={selectedTable}
+            orderType="dine-in"
+          />
+        </View>
       ) : (
         <Pressable style={styles.bottomBar} onPress={() => setShowSummary(true)}>
-          <Text style={{ color: '#fff', fontWeight: '700' }}>{currentOrder.length} items — ${(currentOrder.reduce((s: number, it: any)=> s + Number(it.price || 0) * (it.quantity || 1),0)||0).toFixed(2)}</Text>
+          <Text style={{ color: '#fff', fontWeight: '700' }}>
+            {currentOrder.length} items — ${(currentOrder.reduce((s: number, it: any) => s + Number(it.price || 0) * (it.quantity || 1), 0) || 0).toFixed(2)}
+          </Text>
         </Pressable>
       )}
 
-      <OrderSummarySheet visible={showSummary} onClose={() => setShowSummary(false)} order={currentOrder} origin={(route && route.params && route.params.origin) || null} />
+      <OrderSummarySheet
+        visible={showSummary}
+        onClose={() => setShowSummary(false)}
+        order={currentOrder}
+        origin={(route && route.params && route.params.origin) || null}
+        onSubmit={submitOrder}
+        selectedTable={selectedTable}
+        orderType="dine-in"
+      />
     </SafeAreaView>
   );
 }
@@ -190,5 +255,5 @@ export default function MenuScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#111827' },
   sidePanel: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 420, padding: 16 },
-  bottomBar: { position: 'absolute', left: 16, right: 16, bottom: 20, backgroundColor: '#10B981', padding: 12, borderRadius: 12, alignItems: 'center' }
+  bottomBar: { position: 'absolute', left: 16, right: 16, bottom: 20, backgroundColor: '#10B981', padding: 12, borderRadius: 12, alignItems: 'center' },
 });

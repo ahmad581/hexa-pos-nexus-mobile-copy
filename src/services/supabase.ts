@@ -92,6 +92,28 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
       detectSessionInUrl: false,
     },
   });
+
+  // CRITICAL for RN: authenticate the Realtime websocket so RLS-protected
+  // postgres_changes events are delivered. Without this, the server silently
+  // drops every event and the client logs nothing.
+  const applyRealtimeAuth = (token: string | null) => {
+    try {
+      supabaseVar.realtime.setAuth(token);
+      console.log('[realtime] setAuth', token ? 'token-set' : 'cleared');
+    } catch (e) {
+      console.warn('[realtime] setAuth failed', e);
+    }
+  };
+
+  // Initial session (fires once on app start)
+  supabaseVar.auth.getSession().then(({ data }: any) => {
+    applyRealtimeAuth(data?.session?.access_token ?? null);
+  });
+
+  // Every login / logout / token refresh
+  supabaseVar.auth.onAuthStateChange((_event: string, session: any) => {
+    applyRealtimeAuth(session?.access_token ?? null);
+  });
 }
 
 export const supabase: any = supabaseVar;
