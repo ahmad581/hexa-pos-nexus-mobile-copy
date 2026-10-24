@@ -21,12 +21,10 @@ export function useRealtimeSubscription(
         'postgres_changes',
         { event: '*', schema: 'public', table, ...(filter ? { filter } : {}) },
         (payload) => {
-          console.log('[realtime]', table, payload.eventType, payload.new ?? payload.old);
           queryClient.invalidateQueries({ queryKey });
         },
       )
-      .subscribe((status, err) => {
-        console.log('[realtime] status', table, status, err ?? '');
+      .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           queryClient.invalidateQueries({ queryKey });
         }

@@ -146,6 +146,8 @@ export async function updateDeliveryOrderStatus(
   next: DeliveryStatus,
   opts?: { driverId?: string | null }
 ) {
+  console.log('opt>>>', opts);
+  
   const patch: Record<string, any> = { status: STATUS_MAP[next] };
   if (next === 'delivered') {
     patch.delivered_at = new Date().toISOString();
@@ -224,4 +226,11 @@ export const canManageDeliveries = (role: AppRole | null) => {
   const r = String(role).toLowerCase();
   
   return r === 'supermanager' || r === 'manager' || r === 'drivermanager';
+};
+
+export const isManager = (role: AppRole | null) => {
+  if (!role) return false;
+  const r = String(role).toLowerCase();
+  
+  return r === 'supermanager' || r === 'manager';
 };

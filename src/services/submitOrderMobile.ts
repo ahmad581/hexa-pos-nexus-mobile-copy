@@ -91,9 +91,6 @@ export async function submitOrderMobile(opts: {
       status: 'pending',
       payment_status: 'pending',
     };
-
-    console.log('[submitOrderMobile] inserting order with table_id=', payload.table_id, 'order_number=', payload.order_number);
-
     const { data: orderData, error: orderError } = await supabase
       .from('orders')
       .insert(payload)

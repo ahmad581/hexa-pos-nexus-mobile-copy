@@ -33,8 +33,6 @@ export default function ReserveTableSheet({ visible, onClose, table, branchId, o
   const save = async () => {
     try {
       const payload: any = { status: 'reserved', reserved_for: name || null, reservation_notes: notes || null, reserved_at: (time || new Date()).toISOString() };
-      console.log('payload>>>', payload);
-      
       const { error } = await supabase.from('tables').update(payload).eq('id', table.id);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ['tables', branchId] });

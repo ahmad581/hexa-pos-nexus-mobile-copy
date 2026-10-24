@@ -26,8 +26,6 @@ import TableOrderDetailsSheet from '../components/tables/TableOrderDetailsSheet'
 import MoveTableSheet from '../components/tables/MoveTableSheet';
 import ReserveTableSheet from '../components/tables/ReserveTableSheet';
 
-const CARD_GAP = 12;
-
 export default function TablesScreen() {
   const { width } = useWindowDimensions();
   const navigation = useNavigation();
@@ -95,7 +93,8 @@ export default function TablesScreen() {
   const [showMove, setShowMove] = useState(false);
   const [showReserve, setShowReserve] = useState(false);
 
-  const numColumns = width >= 768 ? 2 : 1;
+  const numColumns = width >= 768 ? 4 : 1;
+  const visibleTables = tables.filter((table: any) => table?.id != null);
 
   if (!branchId) {
     return (
@@ -112,8 +111,6 @@ export default function TablesScreen() {
   }
 
   const handlePrimary = async (table: any) => {
-    console.log('table: ', table);
-    
     try {
       order.setOrderType('dine-in');
       order.setSelectedTable(table);
@@ -125,8 +122,6 @@ export default function TablesScreen() {
     }
 
     try {
-      console.log('table2: ', table);
-      
       (navigation as any).navigate('Menu', {
         tableId: table.id,
         tableNumber: table.table_number,
@@ -137,7 +132,7 @@ export default function TablesScreen() {
     }
   };
 
-  const renderCard = ({ item }: { item: any }) => {
+  const renderTableCard = (item: any) => {
     const reserved = item.status === 'reserved' && item.reserved_for;
     const statusColor = (() => {
       switch (item.status) {
@@ -150,47 +145,49 @@ export default function TablesScreen() {
     })();
 
     return (
-      <View style={styles.card}>
-        <View style={styles.cardHeaderRow}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.tableTitle}>{`${t('tables.tableNumber','Table')} ${item.table_number}`}</Text>
-            {reserved ? (
-              <Text style={styles.reservedTextSmall}>{`${t('tables.reservedFor','Reserved for')} ${item.reserved_for}`}</Text>
-            ) : null}
-          </View>
-
-          <View style={styles.headerRight}>
-            <View style={[styles.badge, { backgroundColor: statusColor }]}>
-              <Text style={styles.badgeText}>{t(`tables.${item.status}`, item.status)}</Text>
+      <View style={[styles.gridCell, { width: `${100 / numColumns}%` }]}>
+        <View style={styles.card}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.tableTitle}>{`${t('tables.tableNumber','Table')} ${item.table_number}`}</Text>
+              {reserved ? (
+                <Text style={styles.reservedTextSmall}>{`${t('tables.reservedFor','Reserved for')} ${item.reserved_for}`}</Text>
+              ) : null}
             </View>
-            {!isHallManager?.() && (
-              <Pressable onPress={() => { setSelectedTable(item); setShowEdit(true); }} style={styles.iconButton}>
-                <MaterialIcon name="edit" size={18} color="#fff" />
-              </Pressable>
-            )}
+
+            <View style={styles.headerRight}>
+              <View style={[styles.badge, { backgroundColor: statusColor }]}>
+                <Text style={styles.badgeText}>{t(`tables.${item.status}`, item.status)}</Text>
+              </View>
+              {!isHallManager?.() && (
+                <Pressable onPress={() => { setSelectedTable(item); setShowEdit(true); }} style={styles.iconButton}>
+                  <MaterialIcon name="edit" size={18} color="#fff" />
+                </Pressable>
+              )}
+            </View>
           </View>
-        </View>
 
-        {reserved && (
-          <Text style={styles.reservedText}>{`${new Date(item.reserved_at).toLocaleString()}`}</Text>
-        )}
+          {reserved && (
+            <Text style={styles.reservedText}>{`${new Date(item.reserved_at).toLocaleString()}`}</Text>
+          )}
 
-        <View style={styles.actions}>
-          <Pressable style={styles.primary} onPress={() => handlePrimary(item)}>
-            <Text style={styles.primaryText}>{hasOrders(item.id) ? t('tables.takeOrder','Take Order') : t('tables.addOrder','Add Order')}</Text>
-          </Pressable>
-
-          <Pressable style={[styles.outline, !hasOrders(item.id) && styles.disabled]} onPress={() => { setSelectedTable(item); setShowOrderDetails(true); }} disabled={!hasOrders(item.id)}>
-            <Text style={[styles.outlineText, !hasOrders(item.id) && styles.outlineTextDisabled]}>{t('tables.orderDetails','Order Details')}</Text>
-          </Pressable>
-
-          <View style={styles.rowTwo}>
-            <Pressable style={[styles.smallBtn, !hasOrders(item.id) && styles.disabled]} onPress={() => { setSelectedTable(item); setShowMove(true); }} disabled={!hasOrders(item.id)}>
-              <Text style={[styles.smallBtnText, !hasOrders(item.id) && styles.smallBtnTextDisabled]}>{t('tables.move','Move')}</Text>
+          <View style={styles.actions}>
+            <Pressable style={styles.primary} onPress={() => handlePrimary(item)}>
+              <Text style={styles.primaryText}>{hasOrders(item.id) ? t('tables.takeOrder','Take Order') : t('tables.addOrder','Add Order')}</Text>
             </Pressable>
-            <Pressable style={[styles.smallBtn, !(item.status === 'available' || item.status === 'reserved') && styles.disabled]} onPress={() => { setSelectedTable(item); setShowReserve(true); }} disabled={!(item.status === 'available' || item.status === 'reserved')}>
-              <Text style={[styles.smallBtnText, !(item.status === 'available' || item.status === 'reserved') && styles.smallBtnTextDisabled]}>{item.status === 'reserved' ? t('tables.editReservation','Edit Reservation') : t('tables.reserve','Reserve')}</Text>
+
+            <Pressable style={[styles.outline, !hasOrders(item.id) && styles.disabled]} onPress={() => { setSelectedTable(item); setShowOrderDetails(true); }} disabled={!hasOrders(item.id)}>
+              <Text style={[styles.outlineText, !hasOrders(item.id) && styles.outlineTextDisabled]}>{t('tables.orderDetails','Order Details')}</Text>
             </Pressable>
+
+            <View style={styles.rowTwo}>
+              <Pressable style={[styles.smallBtn, !hasOrders(item.id) && styles.disabled]} onPress={() => { setSelectedTable(item); setShowMove(true); }} disabled={!hasOrders(item.id)}>
+                <Text style={[styles.smallBtnText, !hasOrders(item.id) && styles.smallBtnTextDisabled]}>{t('tables.move','Move')}</Text>
+              </Pressable>
+              <Pressable style={[styles.smallBtn, !(item.status === 'available' || item.status === 'reserved') && styles.disabled]} onPress={() => { setSelectedTable(item); setShowReserve(true); }} disabled={!(item.status === 'available' || item.status === 'reserved')}>
+                <Text style={[styles.smallBtnText, !(item.status === 'available' || item.status === 'reserved') && styles.smallBtnTextDisabled]}>{item.status === 'reserved' ? t('tables.editReservation','Edit Reservation') : t('tables.reserve','Reserve')}</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </View>
@@ -208,11 +205,12 @@ export default function TablesScreen() {
         </View>
       )}
       <FlatList
-        data={tables}
-        renderItem={renderCard}
-        keyExtractor={(i) => i.id}
+        data={visibleTables}
+        keyExtractor={(table) => table.id}
+        renderItem={({ item }) => renderTableCard(item)}
         numColumns={numColumns}
-        columnWrapperStyle={numColumns > 1 ? { justifyContent: 'space-between', paddingHorizontal: 16 } : undefined}
+        key={`tables-${numColumns}`}
+        columnWrapperStyle={numColumns > 1 ? styles.tableRow : undefined}
         contentContainerStyle={{ padding: 16 }}
       />
 
@@ -237,7 +235,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#111827' },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyText: { color: '#9CA3AF' },
-  card: { backgroundColor: '#0f1724', borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#374151', flex: 1, minHeight: 140 },
+  tableRow: { justifyContent: 'flex-start' },
+  gridCell: { paddingHorizontal: 6 },
+  card: { width: '100%', backgroundColor: '#0f1724', borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#374151', minHeight: 140 },
   cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerLeft: { flex: 1 },
   headerRight: { flexDirection: 'row', alignItems: 'center' },

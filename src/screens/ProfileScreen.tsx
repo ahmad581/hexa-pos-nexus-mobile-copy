@@ -14,12 +14,14 @@ type UserData = {
   full_name?: string;
   primary_role?: string;
   branch_id?: string | null;
+  hourly_rate?: number | null;
 };
 
 type WorkSession = {
   id: string;
   check_in_time: string;
   check_out_time?: string;
+  break_duration?: number | null;
 };
 
 const ProfileScreen = () => {
@@ -162,7 +164,7 @@ const ProfileScreen = () => {
         if (email) {
           const { data: employee, error: empError } = await supabase
             .from('employees')
-            .select('id, branch_id, is_active')
+            .select('id, branch_id, is_active, hourly_rate')
             .eq('email', email)
             .eq('is_active', true)
             .maybeSingle();
@@ -182,6 +184,7 @@ const ProfileScreen = () => {
             : user.user_metadata?.full_name || 'User',
           primary_role: profile?.primary_role,
           branch_id: employeeBranchId || profileBranchId,
+          hourly_rate: profile?.hourly_rate ?? null,
         };
         setUserData(resolved);
 
@@ -198,32 +201,55 @@ const ProfileScreen = () => {
     };
 
     loadUserData();
-  }, [loadRecentSessions, refreshTodaySession]);
+    }, [loadRecentSessions, refreshTodaySession]);
 
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
-  }
+    const groupedSessions = React.useMemo(() => {
+      const groups: Record<string, WorkSession[]> = {};
+      for (const s of workSessions) {
+        const day = new Date(s.check_in_time).toISOString().slice(0, 10);
+        (groups[day] ||= []).push(s);
+      }
+      return Object.entries(groups).sort((a, b) => (a[0] < b[0] ? 1 : -1));
+    }, [workSessions]);
 
-  if (!userData) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>No user data available</Text>
-      </View>
-    );
-  }
+    if (isLoading) {
+      return (
+        <View style={styles.container}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      );
+    }
 
-  const isCheckedIn = !!(todaySession && !todaySession.check_out_time);
+    if (!userData) {
+      return (
+        <View style={styles.container}>
+          <Text style={styles.loadingText}>No user data available</Text>
+        </View>
+      );
+    }
+
+    const isCheckedIn = !!(todaySession && !todaySession.check_out_time);
+
+    const getSessionHours = (s: WorkSession): number => {
+      if (!s.check_out_time) return 0;
+      const ms = new Date(s.check_out_time).getTime() - new Date(s.check_in_time).getTime();
+      const hours = ms / (1000 * 60 * 60) - (s.break_duration || 0) / 60;
+      return Math.max(0, Math.round(hours * 100) / 100);
+    };
+
+    const getSessionEarnings = (s: WorkSession): number => {
+      const rate = userData?.hourly_rate ?? 0;
+      return Math.round(getSessionHours(s) * rate * 100) / 100;
+    };
+
+    const formatMoney = (n: number) => `$${n.toFixed(2)}`;
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.headerContainer}>
         <Text style={styles.header}>User Profile</Text>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <MaterialIcon name="logout" size={24} color={COLORS.primary.main} />
+          <MaterialIcon name="logout" size={24} color={COLORS.error} />
         </TouchableOpacity>
       </View>
 
@@ -257,6 +283,11 @@ const ProfileScreen = () => {
               {todaySession.check_out_time && (
                 <Text style={styles.lastEvent}>
                   Check-out: {new Date(todaySession.check_out_time).toLocaleTimeString()}
+                  {todaySession?.check_out_time && (
+                    <Text style={styles.lastEvent}>
+                      Hours: {getSessionHours(todaySession)} h • Earnings: {formatMoney(getSessionEarnings(todaySession))}
+                    </Text>
+                  )}
                 </Text>
               )}
             </>
@@ -274,19 +305,32 @@ const ProfileScreen = () => {
 
       <View style={styles.section}>
         <Text style={styles.sectionHeader}>Work Sessions</Text>
-        {workSessions.length > 0 ? (
-          workSessions.map((session) => (
-            <View key={session.id} style={styles.workHistoryItem}>
-              <Text style={styles.workTitle}>
-                Check-in: {new Date(session.check_in_time).toLocaleString()}
-              </Text>
-              <Text style={styles.workDate}>
-                {session.check_out_time
-                  ? `Check-out: ${new Date(session.check_out_time).toLocaleString()}`
-                  : 'Check-out: —'}
-              </Text>
-            </View>
-          ))
+        {groupedSessions.length > 0 ? (
+          groupedSessions.map(([day, sessions]) => {
+            const dayHours = sessions.reduce((sum, s) => sum + getSessionHours(s), 0);
+            const dayEarnings = sessions.reduce((sum, s) => sum + getSessionEarnings(s), 0);
+            return (
+              <View key={day} style={{ marginBottom: SPACING.md }}>
+                {sessions.map((session) => (
+                  <View key={session.id} style={styles.workHistoryItem}>
+                    <Text style={styles.workTitle}>
+                      Check-in: {new Date(session.check_in_time).toLocaleString()}
+                    </Text>
+                    <Text style={styles.workTitle}>
+                      {session.check_out_time
+                        ? `Check-out: ${new Date(session.check_out_time).toLocaleString()}`
+                        : 'Check-out: —'}
+                    </Text>
+                    {session.check_out_time && (
+                      <Text style={styles.workDate}>
+                        Hours: {getSessionHours(session).toFixed(2)} h • Earnings: {formatMoney(getSessionEarnings(session))}
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            );
+          })
         ) : (
           <Text style={styles.text}>No work sessions available</Text>
         )}

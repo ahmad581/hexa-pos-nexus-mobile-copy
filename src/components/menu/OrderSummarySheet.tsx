@@ -33,8 +33,6 @@ export default function OrderSummarySheet({
   orderNotes: orderNotesProp,
   editingOrderId: editingOrderIdProp,
 }: Props) {
-  console.log('order: ', order);
-  
   const [submitting, setSubmitting] = useState(false);
   const navigation = useNavigation<any>();
   const orderHook = useOrder() as any;
@@ -80,12 +78,6 @@ export default function OrderSummarySheet({
         currentOrder: order || [],
         editingOrderId: effectiveEditingOrderId,
       };
-
-      console.log('[OrderSummarySheet] submit payload', {
-        selectedTable: payload.selectedTable,
-        orderType: payload.orderType,
-        items: payload.currentOrder?.length,
-      });
 
       const ok = await submitOrderMobile(payload as any);
       if (!ok) {

@@ -21,7 +21,10 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a1f2e"
       },
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -35,10 +38,14 @@
     "plugins": [
       "expo-web-browser",
       "expo-secure-store",
-      ["expo-location", {
-        "locationAlwaysAndWhenInUsePermission": "We use your location to verify you are at the branch when you check in.",
-        "locationWhenInUsePermission": "We use your location to verify check-in at your branch."
-      }]
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "We use your location to verify you are at the branch when you check in.",
+          "locationWhenInUsePermission": "We use your location to verify check-in at your branch."
+        }
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {

@@ -99,7 +99,6 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   const applyRealtimeAuth = (token: string | null) => {
     try {
       supabaseVar.realtime.setAuth(token);
-      console.log('[realtime] setAuth', token ? 'token-set' : 'cleared');
     } catch (e) {
       console.warn('[realtime] setAuth failed', e);
     }
@@ -117,3 +116,37 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 }
 
 export const supabase: any = supabaseVar;
+
+export const fetchDriverDailyOrders = async (
+  employeeId: string
+): Promise<{ count: number; total: number; ids: string[] }> => {
+  if (!employeeId) return { count: 0, total: 0, ids: [] };
+
+  const start = new Date(); start.setHours(0, 0, 0, 0);
+  const end = new Date(start); end.setDate(end.getDate() + 1);
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id, total_amount')
+    .eq('driver_id', employeeId)
+    .gte('created_at', start.toISOString())
+    .lt('created_at', end.toISOString());
+
+  if (error) {
+    console.error('[fetchDriverDailyOrders] failed:', error);
+    return { count: 0, total: 0, ids: [] };
+  }
+
+  const rows = data ?? [];
+  return {
+    count: rows.length,
+    total: rows.reduce((s: number, o: any) => s + (Number(o.total_amount) || 0), 0),
+    ids: rows.map((o: any) => o.id),
+  };
+};
+
+// Backward-compat wrapper
+export const fetchDriverDailyStats = async (employeeId: string) => {
+  const { count, total } = await fetchDriverDailyOrders(employeeId);
+  return { count, total };
+};

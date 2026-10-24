@@ -49,15 +49,17 @@ export default function MainTabNavigator() {
   const isManager = useMemo(() => role === 'manager' || role === 'supermanager' || role === 'systemmaster', [role]);
   const isSuperManager = useMemo(() => role === 'supermanager', [role]);
   const isHallManager = useMemo(() => role.includes('hall'), [role]);
-  const isDriver = useMemo(() => role.includes('driver'), [role]);
+  const isDriverManager = useMemo(() => role === 'drivermanager', [role]);
+  const isDriver = useMemo(() => role === 'driver', [role]);
 
   // Decide which tabs to show based on role
   const tabs = useMemo(() => {
     if (isSuperManager || isManager) return ['Profile', 'Pending', 'InDelivery', 'Delivered', 'Tables'];
     if (isHallManager) return ['Profile', 'Tables'];
-    if (isDriver) return ['Profile', 'Pending', 'InDelivery', 'Delivered'];
+    if (isDriverManager) return ['Profile', 'Pending', 'InDelivery', 'Delivered'];
+    if (isDriver) return ['Profile', 'InDelivery'];
     return ['Profile'];
-  }, [isManager, isSuperManager, isHallManager, isDriver]);
+  }, [isManager, isSuperManager, isHallManager, isDriverManager, isDriver]);
 
   return (
     <Tab.Navigator

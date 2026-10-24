@@ -8,25 +8,33 @@ type Props = {
 };
 
 const emojiMap: Record<string, string> = {
-  logout: '🔒',
+  logout: 'logout',
   login: '🔓',
   'pending-actions': '⏳',
   'local-shipping': '🚚',
+  'assign': 'assign',
+  'send to': 'send to',
   schedule: '🕒',
-  'check-circle': '✅',
+  'check-circle': 'complete',
   'expand-more': '▾',
   'expand-less': '▴',
-  'expand_more': '▾',
-  'expand_less': '▴',
-  'expand-less': '▴',
-  'expand-more': '▾',
-  'logout': '🔒',
-  'login': '🔓',
+  expand_more: '▾',
+  expand_less: '▴',
+  visibility: 'view',
+  person: '👤',
+  call: 'call',
+  'more-vert': '⋮',
+  phone: 'phone',
+  close: '✕',
+  'arrow-back': '←',
+  receipt: '🧾',
+  'location-on': '📍',
+  'access-time': '🕒',
+  calculate: '🧮',
 };
 
 let NativeMaterialIcons: any = null;
 try {
-  // Try require to avoid bundling on web
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const icons = require('@expo/vector-icons');
   NativeMaterialIcons = icons && icons.MaterialIcons;

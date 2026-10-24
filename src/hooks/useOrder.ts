@@ -11,11 +11,14 @@ export function useOrder() {
   const [orderNotes, setOrderNotes] = useState<string | null>(null);
   const [originRoute, setOriginRouteState] = useState<string | null>(null);
 
-  const addItemToOrder = (item: any) => {
+  const addItemToOrder = (item: any, quantity = 1) => {
+    const amount = Number(quantity);
+    if (!Number.isFinite(amount) || amount <= 0) return;
+
     setCurrentOrder((prev) => {
       const found = prev.find((p) => p.id === item.id);
-      if (found) return prev.map((p) => (p.id === item.id ? { ...p, quantity: (p.quantity || 1) + 1 } : p));
-      return [...prev, { ...item, quantity: 1 }];
+      if (found) return prev.map((p) => (p.id === item.id ? { ...p, quantity: (p.quantity || 1) + amount } : p));
+      return [...prev, { ...item, quantity: amount }];
     });
   };
 

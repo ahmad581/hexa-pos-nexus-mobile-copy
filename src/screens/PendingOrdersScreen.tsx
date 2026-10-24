@@ -6,25 +6,15 @@ import {
 import MaterialIcon from '../lib/Icon';
 import { COLORS, TYPOGRAPHY, SPACING } from '../theme';
 import {
-  fetchDeliveryOrders,
-  fetchCurrentBranchId,
-  updateDeliveryOrderStatus,
-  fetchDrivers,
-  fetchCurrentUserRole,
-  canManageDeliveries,
-  subscribeDeliveryOrders,
-  type DeliveryStatus,
-  type Driver,
-  type AppRole,
+  fetchDeliveryOrders, fetchCurrentBranchId, updateDeliveryOrderStatus,
+  fetchDrivers, fetchCurrentUserRole, canManageDeliveries, subscribeDeliveryOrders,
+  type Driver, type AppRole,
 } from '../services/orderService';
+import OrderDetailsModal from '../components/OrderDetailsModal';
 
 type PendingOrder = {
-  id: string;
-  orderId: string;
-  customer: string;
-  total: number;
-  createdAt: string;
-  address: string;
+  id: string; orderId: string; customer: string; total: number;
+  createdAt: string; address: string; order_seq: string;
 };
 
 const formatAddress = (row: any) => {
@@ -37,23 +27,23 @@ const PendingOrdersScreen = () => {
   const [orders, setOrders] = useState<PendingOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actionOrderId, setActionOrderId] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+
   const [assignOrderId, setAssignOrderId] = useState<string | null>(null);
   const [drivers, setDrivers] = useState<Driver[] | null>(null);
   const [driversLoading, setDriversLoading] = useState(false);
   const [driversError, setDriversError] = useState<string | null>(null);
+
+  const [detailsOrderId, setDetailsOrderId] = useState<string | null>(null);
+
   const [role, setRole] = useState<AppRole | null>(null);
-  const canManage = canManageDeliveries(role);
+  const isDriver = role === 'Driver';
+  const canManage = canManageDeliveries(role) && !isDriver;
 
   const loadOrders = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+    setIsLoading(true); setError(null);
     try {
-      const [branchId, currentRole] = await Promise.all([
-        fetchCurrentBranchId(),
-        fetchCurrentUserRole(),
-      ]);
+      const [branchId, currentRole] = await Promise.all([fetchCurrentBranchId(), fetchCurrentUserRole()]);
       setRole(currentRole);
       if (!branchId) throw new Error('Branch context is missing. Cannot load delivery orders.');
       const rows = await fetchDeliveryOrders('pending', branchId);
@@ -64,39 +54,20 @@ const PendingOrdersScreen = () => {
         total: Number(row.total_amount ?? 0),
         createdAt: row.created_at ? new Date(row.created_at).toLocaleString() : '',
         address: formatAddress(row),
+        order_seq: row.order_seq || '',
       })));
     } catch (err: any) {
       setError(err.message || 'Unable to load pending delivery orders');
-    } finally {
-      setIsLoading(false);
-    }
+    } finally { setIsLoading(false); }
   }, []);
 
   useEffect(() => {
     loadOrders();
     const unsubscribe = subscribeDeliveryOrders(loadOrders, 'pending');
-    return () => {
-      if (typeof unsubscribe === 'function') unsubscribe();
-    };
+    return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
   }, [loadOrders]);
 
-  const handleStatusChange = async (next: DeliveryStatus) => {
-    if (!actionOrderId) return;
-    const id = actionOrderId;
-    setIsUpdating(true);
-    try {
-      await updateDeliveryOrderStatus(id, next);
-      setOrders(prev => prev.filter(o => o.id !== id));
-      setActionOrderId(null);
-    } catch (err: any) {
-      Alert.alert('Update failed', err.message || 'Could not update the order');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
   const openAssignModal = async (orderId: string) => {
-    setActionOrderId(null);
     setAssignOrderId(orderId);
     if (drivers !== null) return;
     setDriversLoading(true); setDriversError(null);
@@ -121,45 +92,47 @@ const PendingOrdersScreen = () => {
     } finally { setIsUpdating(false); }
   };
 
-  const renderOrderItem = ({ item }: { item: PendingOrder }) => (
-    <View style={styles.orderCard}>
-      <View style={styles.orderHeader}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.orderId}>{item.orderId}</Text>
-          <Text style={styles.customer}>{item.customer}</Text>
+  const renderOrderItem = ({ item }: { item: PendingOrder }) => {
+    return (
+      <View style={styles.orderCard}>
+        <View style={styles.orderHeader}>
+          <Text style={styles.orderId}>{item.address}</Text>
+          <Text style={styles.total}>${item.total.toFixed(2)}</Text>
         </View>
-        <Text style={styles.total}>${item.total.toFixed(2)}</Text>
-        {canManage && (
+
+        <View style={styles.addressRow}>
+          <Text style={styles.addressText}>{item.order_seq}</Text>
+        </View>
+
+        <View style={styles.orderFooter}>
+          <Text style={styles.createdAt}>{item.createdAt}</Text>
+        </View>
+
+        <View style={styles.actionsRow}>
           <TouchableOpacity
-            style={styles.moreBtn}
-            onPress={() => setActionOrderId(item.id)}
+            style={styles.iconBtn}
+            onPress={() => setDetailsOrderId(item.id)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="View order details"
           >
-            <MaterialIcon name="more-vert" size={22} color={COLORS.text.secondary} />
+            <MaterialIcon name="visibility" size={22} color={COLORS.text.secondary} />
           </TouchableOpacity>
-        )}
-      </View>
 
-      <View style={styles.addressRow}>
-        <MaterialIcon name="place" size={16} color={COLORS.text.secondary} />
-        <Text style={styles.addressText} numberOfLines={2}>
-          {item.address || 'No address provided'}
-        </Text>
+          {canManage && (
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={() => openAssignModal(item.id)}
+              disabled={isUpdating}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="Assign driver"
+            >
+              <MaterialIcon name="assign" size={22} color={COLORS.primary.main} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
-
-      <View style={styles.orderFooter}>
-        <Text style={styles.itemsCount}>Delivery order</Text>
-        <Text style={styles.createdAt}>{item.createdAt}</Text>
-      </View>
-
-      {canManage && (
-        <TouchableOpacity style={styles.primaryBtn} onPress={() => openAssignModal(item.id)} disabled={isUpdating}>
-          <MaterialIcon name="local-shipping" size={16} color="#fff" />
-          <Text style={styles.primaryBtnText}>Assign &amp; Send to Delivery</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
+    );
+  };
 
   if (isLoading) {
     return (
@@ -171,9 +144,7 @@ const PendingOrdersScreen = () => {
             <Text style={styles.headerSubtitle}>Loading orders…</Text>
           </View>
         </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary.main} />
-        </View>
+        <View style={styles.loadingContainer}><ActivityIndicator size="large" color={COLORS.primary.main} /></View>
       </View>
     );
   }
@@ -202,29 +173,6 @@ const PendingOrdersScreen = () => {
           onRefresh={loadOrders}
         />
       )}
-
-      <Modal
-        visible={!!actionOrderId && !isUpdating && canManage}
-        transparent animationType="slide"
-        onRequestClose={() => setActionOrderId(null)}
-      >
-        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setActionOrderId(null)}>
-          <View style={styles.sheet}>
-            <Text style={styles.sheetTitle}>Change status</Text>
-            <TouchableOpacity style={styles.sheetItem} onPress={() => handleStatusChange('in_delivery')}>
-              <MaterialIcon name="local-shipping" size={20} color={COLORS.primary.main} />
-              <Text style={styles.sheetItemText}>Move to In Delivery</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.sheetItem} onPress={() => handleStatusChange('delivered')}>
-              <MaterialIcon name="check-circle" size={20} color={COLORS.success ?? '#16a34a'} />
-              <Text style={styles.sheetItemText}>Mark Delivered</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.sheetItem, styles.cancelItem]} onPress={() => setActionOrderId(null)}>
-              <Text style={[styles.sheetItemText, { color: COLORS.text.secondary }]}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
 
       <Modal
         visible={!!assignOrderId && !isUpdating && canManage}
@@ -257,6 +205,12 @@ const PendingOrdersScreen = () => {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      <OrderDetailsModal
+        orderId={detailsOrderId}
+        visible={!!detailsOrderId}
+        onClose={() => setDetailsOrderId(null)}
+      />
     </View>
   );
 };
@@ -264,35 +218,23 @@ const PendingOrdersScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background.primary },
   driverPhone: { fontSize: TYPOGRAPHY.fontSize.xs, color: COLORS.text.tertiary, marginTop: 2 },
-  header: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.lg,
-    backgroundColor: COLORS.surface.primary,
-    borderBottomWidth: 1, borderBottomColor: COLORS.border.medium,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.lg, paddingVertical: SPACING.lg, backgroundColor: COLORS.surface.primary, borderBottomWidth: 1, borderBottomColor: COLORS.border.medium },
   headerText: { marginLeft: SPACING.md, flex: 1 },
   headerTitle: { fontSize: TYPOGRAPHY.fontSize.lg, fontWeight: TYPOGRAPHY.fontWeight.semibold as any, color: COLORS.text.primary },
   headerSubtitle: { fontSize: TYPOGRAPHY.fontSize.sm, color: COLORS.text.secondary, marginTop: SPACING.xs },
   listContent: { padding: SPACING.lg },
-  orderCard: {
-    backgroundColor: COLORS.surface.primary, borderRadius: 8, padding: SPACING.md,
-    marginBottom: SPACING.md, borderLeftWidth: 4, borderLeftColor: COLORS.warning,
-  },
-  orderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.md },
+  orderCard: { backgroundColor: COLORS.surface.primary, borderRadius: 8, padding: SPACING.md, marginBottom: SPACING.md, borderLeftWidth: 4, borderLeftColor: COLORS.warning },
+  orderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md },
   orderId: { fontSize: TYPOGRAPHY.fontSize.md, fontWeight: TYPOGRAPHY.fontWeight.semibold as any, color: COLORS.text.primary },
   customer: { fontSize: TYPOGRAPHY.fontSize.sm, color: COLORS.text.secondary, marginTop: SPACING.xs },
-  total: { fontSize: TYPOGRAPHY.fontSize.lg, fontWeight: TYPOGRAPHY.fontWeight.bold as any, color: COLORS.primary.main, marginRight: SPACING.sm },
-  moreBtn: { padding: 4 },
-  addressRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginBottom: SPACING.sm },
+  total: { fontSize: TYPOGRAPHY.fontSize.lg, fontWeight: TYPOGRAPHY.fontWeight.bold as any, color: COLORS.primary.main },
+  addressRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: SPACING.sm },
   addressText: { flex: 1, fontSize: TYPOGRAPHY.fontSize.sm, color: COLORS.text.secondary, marginLeft: 6 },
   orderFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   itemsCount: { fontSize: TYPOGRAPHY.fontSize.xs, color: COLORS.text.tertiary },
   createdAt: { fontSize: TYPOGRAPHY.fontSize.xs, color: COLORS.text.tertiary },
-  primaryBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    backgroundColor: COLORS.primary.main, paddingVertical: 10, borderRadius: 6, marginTop: SPACING.md,
-  },
-  primaryBtnText: { color: '#fff', fontSize: TYPOGRAPHY.fontSize.sm, fontWeight: TYPOGRAPHY.fontWeight.semibold as any, marginLeft: 6 },
+  actionsRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginTop: SPACING.md, paddingTop: SPACING.sm, borderTopWidth: 1, borderTopColor: COLORS.border.medium },
+  iconBtn: { padding: 8, borderRadius: 6 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: SPACING.lg },
   errorText: { color: COLORS.error, fontSize: TYPOGRAPHY.fontSize.sm, textAlign: 'center' },
@@ -300,7 +242,7 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: COLORS.surface.primary, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: SPACING.lg },
   sheetTitle: { fontSize: TYPOGRAPHY.fontSize.md, fontWeight: TYPOGRAPHY.fontWeight.semibold as any, color: COLORS.text.primary, marginBottom: SPACING.md },
-  sheetItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
+  sheetItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
   sheetItemText: { fontSize: TYPOGRAPHY.fontSize.md, color: COLORS.text.primary, marginLeft: 12 },
   cancelItem: { justifyContent: 'center', borderTopWidth: 1, borderTopColor: COLORS.border.medium, marginTop: SPACING.sm },
 });
