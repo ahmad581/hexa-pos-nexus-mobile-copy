@@ -53,7 +53,7 @@
       }
     },
     "experiments": {
-      "baseUrl": "/hexa-pos-nexus-mobile-copy"
+      "baseUrl": ""
     }
   }
 }
