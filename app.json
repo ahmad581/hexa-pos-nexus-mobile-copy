@@ -51,6 +51,9 @@
       "eas": {
         "projectId": "6e880ab1-a653-428f-8ba5-0df75dd02e64"
       }
+    },
+    "experiments": {
+      "baseUrl": "/hexa-pos-nexus-mobile-copy"
     }
   }
 }
