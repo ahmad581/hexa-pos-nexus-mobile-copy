@@ -53,6 +53,8 @@ export default function MenuScreen({ route, navigation }: any) {
   const [notes, setNotes] = useState('');
   const [selectedQuantity, setSelectedQuantity] = useState('1');
   const [quantityEntryStarted, setQuantityEntryStarted] = useState(false);
+  const [quantityEditItemId, setQuantityEditItemId] = useState<string | null>(null);
+  const [quantityBeforeEdit, setQuantityBeforeEdit] = useState<{ value: string; started: boolean } | null>(null);
 
   // ---- Per-line (cart item) notes editor ----
   const [noteCartIndex, setNoteCartIndex] = useState<number | null>(null);
@@ -201,7 +203,44 @@ export default function MenuScreen({ route, navigation }: any) {
     setQuantityEntryStarted(true);
   };
 
+  const cancelQuantityEdit = () => {
+    setQuantityEditItemId(null);
+    setSelectedQuantity(quantityBeforeEdit?.value ?? '1');
+    setQuantityEntryStarted(quantityBeforeEdit?.started ?? false);
+    setQuantityBeforeEdit(null);
+  };
+
+  const selectCartItemForQuantityEdit = (item: any) => {
+    if (!quantityEditItemId) {
+      setQuantityBeforeEdit({ value: selectedQuantity, started: quantityEntryStarted });
+    }
+    setQuantityEditItemId(item.id);
+    setSelectedQuantity(String(item.quantity || 1));
+    setQuantityEntryStarted(false);
+  };
+
+  const confirmQuantityEdit = () => {
+    if (!quantityEditItemId) return;
+    const quantity = Number(selectedQuantity);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      Alert.alert('Invalid quantity', 'Select a quantity greater than zero.');
+      return;
+    }
+
+    updateItemQuantity?.(quantityEditItemId, quantity);
+    cancelQuantityEdit();
+  };
+
+  const removeCartItem = (itemId: string) => {
+    removeItemFromOrder?.(itemId);
+    if (quantityEditItemId === itemId) cancelQuantityEdit();
+  };
+
   const addMenuItem = (item: MenuItem) => {
+    if (quantityEditItemId) {
+      Alert.alert('Finish quantity edit', 'Confirm or cancel the current quantity edit first.');
+      return;
+    }
     const quantity = Number(selectedQuantity);
     if (!Number.isFinite(quantity) || quantity <= 0) {
       Alert.alert('Invalid quantity', 'Select a quantity greater than zero.');
@@ -213,6 +252,10 @@ export default function MenuScreen({ route, navigation }: any) {
   };
 
   const submitOrder = async () => {
+    if (quantityEditItemId) {
+      Alert.alert('Finish quantity edit', 'Confirm or cancel the current quantity edit first.');
+      return;
+    }
     if (!branchId) return Alert.alert('Missing branch');
     if (!currentOrder?.length) return Alert.alert('No items');
     try {
@@ -257,6 +300,7 @@ export default function MenuScreen({ route, navigation }: any) {
       await queryClient.refetchQueries({ queryKey: ['table-orders', branchId] });
       await queryClient.refetchQueries({ queryKey: ['tables', branchId] });
       clearCurrentOrder();
+      cancelQuantityEdit();
       setNotes('');
       navigation?.navigate?.('App', { screen: 'Tables' });
     } catch (e: any) {
@@ -315,6 +359,24 @@ export default function MenuScreen({ route, navigation }: any) {
       <View style={styles.quantityDisplay}>
         <Text style={styles.quantityDisplayText} numberOfLines={1}>{selectedQuantity}</Text>
       </View>
+      <View style={styles.quantityEditActions}>
+        <Pressable
+          style={[styles.quantityEditKey, !quantityEditItemId && styles.quantityEditKeyDisabled]}
+          onPress={confirmQuantityEdit}
+          disabled={!quantityEditItemId}
+          accessibilityLabel="Confirm quantity edit"
+        >
+          <MaterialIcon name="check" size={18} color={quantityEditItemId ? COLORS.accent : COLORS.textDim} />
+        </Pressable>
+        <Pressable
+          style={[styles.quantityEditKey, !quantityEditItemId && styles.quantityEditKeyDisabled]}
+          onPress={cancelQuantityEdit}
+          disabled={!quantityEditItemId}
+          accessibilityLabel="Cancel quantity edit"
+        >
+          <MaterialIcon name="close" size={18} color={quantityEditItemId ? COLORS.danger : COLORS.textDim} />
+        </Pressable>
+      </View>
       <Pressable style={styles.quantityKey} onPress={removeQuantityDigit} accessibilityLabel="Backspace">
         <Text style={styles.backspaceText}>⌫</Text>
       </Pressable>
@@ -360,19 +422,33 @@ export default function MenuScreen({ route, navigation }: any) {
         ) : (
           <View style={styles.cartItems}>
             {currentOrder.map((it: any, idx: number) => (
-              <View key={`${it.id}-${idx}`} style={[styles.cartRow, isTablet && styles.tabletCartRow]}>
+              <View
+                key={`${it.id}-${idx}`}
+                style={[
+                  styles.cartRow,
+                  isTablet && styles.tabletCartRow,
+                  quantityEditItemId === it.id && styles.selectedCartRow,
+                ]}
+              >
                 <View style={styles.cartItemTop}>
-                  <View style={styles.cartItemInfo}>
+                  <Pressable
+                    style={styles.cartItemInfo}
+                    onPress={() => selectCartItemForQuantityEdit(it)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Edit quantity for ${it.name}`}
+                    accessibilityState={{ selected: quantityEditItemId === it.id }}
+                  >
                     <Text style={[styles.cartName, isTablet && styles.tabletCartText]}>{it.name}</Text>
                     <Text style={[styles.cartPrice, isTablet && styles.tabletCartMuted]}>
                       JD{Number(it.price).toFixed(2)} × {it.quantity || 1}
                     </Text>
-                  </View>
+                  </Pressable>
                   <View style={styles.cartItemControls}>
                     <View style={[styles.qtyBox, isTablet && styles.tabletQtyBox]}>
                       <Pressable
                         accessibilityLabel={`Decrease ${it.name} quantity`}
                         onPress={() => updateItemQuantity?.(it.id, Math.max(0, (it.quantity || 1) - 1))}
+                        disabled={quantityEditItemId === it.id}
                       >
                         <MaterialIcon name="remove" size={18} color={isTablet ? '#334155' : COLORS.text} />
                       </Pressable>
@@ -380,13 +456,14 @@ export default function MenuScreen({ route, navigation }: any) {
                       <Pressable
                         accessibilityLabel={`Increase ${it.name} quantity`}
                         onPress={() => updateItemQuantity?.(it.id, (it.quantity || 1) + 1)}
+                        disabled={quantityEditItemId === it.id}
                       >
                         <MaterialIcon name="add" size={18} color={isTablet ? '#334155' : COLORS.text} />
                       </Pressable>
                     </View>
                     <Pressable
                       accessibilityLabel={`Remove ${it.name}`}
-                      onPress={() => removeItemFromOrder?.(it.id)}
+                      onPress={() => removeCartItem(it.id)}
                       style={styles.removeItemButton}
                     >
                       <MaterialIcon name="close" size={18} color={COLORS.danger} />
@@ -430,13 +507,17 @@ export default function MenuScreen({ route, navigation }: any) {
         </Pressable> */}
         <Pressable
           style={[styles.actionGhost, isTablet && styles.tabletActionGhost]}
-          onPress={() => { clearCurrentOrder(); setNotes(''); }}
+          onPress={() => { clearCurrentOrder(); setNotes(''); cancelQuantityEdit(); }}
         >
           <MaterialIcon name="close" size={20} color={COLORS.danger} />
         </Pressable>
         <Pressable
-          style={[styles.submitBtn, isTablet && styles.tabletSubmitBtn, !currentOrder?.length && { opacity: 0.5 }]}
-          onPress={submitOrder} disabled={!currentOrder?.length}
+          style={[
+            styles.submitBtn,
+            isTablet && styles.tabletSubmitBtn,
+            (!currentOrder?.length || quantityEditItemId) && { opacity: 0.5 },
+          ]}
+          onPress={submitOrder} disabled={!currentOrder?.length || !!quantityEditItemId}
         >
           <Text style={{ color: COLORS.text }}>
             Submit
@@ -694,6 +775,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder,
   },
+  selectedCartRow: {
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+  },
   tabletCartRow: { borderBottomColor: COLORS.cardBorder },
   cartItemTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
   cartItemInfo: { flex: 1, minWidth: 0 },
@@ -771,6 +857,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   quantityDisplayText: { color: COLORS.text, fontSize: 15, fontWeight: '700' },
+  quantityEditActions: { flexDirection: 'row', gap: 4 },
+  quantityEditKey: {
+    flex: 1,
+    minHeight: 36,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    borderRadius: 5,
+    backgroundColor: COLORS.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quantityEditKeyDisabled: { opacity: 0.45 },
   backspaceText: { color: COLORS.danger, fontSize: 18, fontWeight: '700' },
   quantityKey: {
     minHeight: 36,

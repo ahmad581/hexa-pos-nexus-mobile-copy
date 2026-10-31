@@ -9,6 +9,7 @@ type Props = {
 
 const emojiMap: Record<string, string> = {
   logout: 'logout',
+  check: '✓',
   login: '🔓',
   'pending-actions': '⏳',
   'local-shipping': '🚚',
