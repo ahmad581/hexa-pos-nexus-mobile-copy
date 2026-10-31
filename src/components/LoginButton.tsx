@@ -57,7 +57,7 @@ function getButtonStyle(variant: ButtonVariant) {
   const baseStyle = {
     borderRadius: THEME.radius.sm,
     paddingVertical: THEME.spacing.lg,
-    ...THEME.shadows.glowGreen,
+    ...THEME.shadows.glowAccent,
   };
 
   switch (variant) {

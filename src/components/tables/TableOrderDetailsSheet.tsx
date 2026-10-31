@@ -147,7 +147,7 @@ export default function TableOrderDetailsSheet({ visible, onClose, table }: Prop
           </View>
 
           {loadingDetails ? (
-            <ActivityIndicator color="#00AFAF" style={styles.loading} />
+            <ActivityIndicator color="#01A9A8" style={styles.loading} />
           ) : queryError ? (
             <Text style={styles.errorText}>
               {queryError instanceof Error ? queryError.message : t('tables.loadOrdersFailed', 'Failed to load order details.')}
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   totalLabel: { color: '#111827', fontSize: 17, fontWeight: '700' },
-  totalValue: { color: '#00AFAF', fontSize: 17, fontWeight: '700' },
+  totalValue: { color: '#01A9A8', fontSize: 17, fontWeight: '700' },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16 },
   clearButton: {
     minWidth: 126,
@@ -278,12 +278,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#00AFAF',
+    backgroundColor: '#01A9A8',
     borderRadius: 7,
     paddingHorizontal: 14,
     gap: 6,
   },
   disabledButton: { opacity: 0.6 },
-  currencyIcon: { color: '#fff', fontSize: 18, fontWeight: '500' },
-  clearButtonText: { color: '#fff', fontWeight: '700' },
+  currencyIcon: { color: '#073B3B', fontSize: 18, fontWeight: '500' },
+  clearButtonText: { color: '#073B3B', fontWeight: '700' },
 });

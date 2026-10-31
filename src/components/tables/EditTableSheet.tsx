@@ -57,10 +57,10 @@ export default function EditTableSheet({ visible, onClose, table, onSaved }: Pro
 }
 
 const styles = StyleSheet.create({
-  sheet: { backgroundColor: '#1f2937', padding: 16, borderRadius: 12 },
-  title: { color: '#fff', fontSize: 18, marginBottom: 8 },
-  input: { backgroundColor: '#111827', color: '#fff', padding: 8, borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: '#374151' },
-  button: { backgroundColor: '#10B981', padding: 12, borderRadius: 8, alignItems: 'center', marginTop: 8 },
-  buttonText: { color: '#fff', fontWeight: '600' },
-  ghost: { backgroundColor: '#374151' },
+  sheet: { backgroundColor: '#FFFFFF', padding: 16, borderRadius: 12 },
+  title: { color: '#1F2933', fontSize: 18, marginBottom: 8 },
+  input: { backgroundColor: '#e6ecee', color: '#1F2933', padding: 8, borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: '#CBD5D8' },
+  button: { backgroundColor: '#01A9A8', padding: 12, borderRadius: 8, alignItems: 'center', marginTop: 8 },
+  buttonText: { color: '#073B3B', fontWeight: '600' },
+  ghost: { backgroundColor: '#e6ecee' },
 });

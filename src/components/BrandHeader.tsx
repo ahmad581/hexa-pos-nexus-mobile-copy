@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: THEME.spacing.md,
-    ...THEME.shadows.glowGreen,
+    ...THEME.shadows.glowAccent,
   },
   brandIconText: {
     fontSize: THEME.typography.fontSize.display,

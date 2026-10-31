@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { COLORS } from '../../theme';
 
 export default function StatusPill({ children, onClose }: { children: React.ReactNode; onClose?: () => void }) {
   return (
@@ -11,7 +12,7 @@ export default function StatusPill({ children, onClose }: { children: React.Reac
 }
 
 const styles = StyleSheet.create({
-  pill: { backgroundColor: '#064E3B', padding: 8, borderRadius: 999, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 },
-  text: { color: '#D1FAE5' },
-  close: { color: '#D1FAE5', marginLeft: 8 }
+  pill: { backgroundColor: COLORS.primary.light, padding: 8, borderRadius: 999, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 },
+  text: { color: COLORS.text.primary },
+  close: { color: COLORS.text.primary, marginLeft: 8 }
 });

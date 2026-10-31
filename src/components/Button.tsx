@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { COLORS } from '../theme';
 
 interface ButtonProps {
   title: string;
@@ -24,16 +25,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   button_primary: {
-    backgroundColor: '#1a73e8',
+    backgroundColor: COLORS.primary.main,
   },
   button_secondary: {
-    backgroundColor: '#34a853',
+    backgroundColor: COLORS.surface.secondary,
   },
   button_danger: {
-    backgroundColor: '#ea4335',
+    backgroundColor: COLORS.error,
   },
   buttonText: {
-    color: '#ffffff',
+    color: COLORS.text.primary,
     fontSize: 16,
     fontWeight: '600',
   },

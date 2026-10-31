@@ -58,11 +58,11 @@ export default function MoveTableSheet({ visible, onClose, table, branchId, onMo
 }
 
 const styles = StyleSheet.create({
-  sheet: { backgroundColor: '#1f2937', padding: 16, borderRadius: 12, maxHeight: 400 },
-  title: { color: '#fff', fontSize: 18, marginBottom: 8 },
-  target: { padding: 12, borderRadius: 8, backgroundColor: '#111827', marginBottom: 8, borderWidth: 1, borderColor: '#374151' },
-  targetText: { color: '#fff' },
-  button: { backgroundColor: '#10B981', padding: 12, borderRadius: 8, alignItems: 'center', marginTop: 8 },
-  buttonText: { color: '#fff', fontWeight: '600' },
-  ghost: { backgroundColor: '#374151' },
+  sheet: { backgroundColor: '#FFFFFF', padding: 16, borderRadius: 12, maxHeight: 400 },
+  title: { color: '#1F2933', fontSize: 18, marginBottom: 8 },
+  target: { padding: 12, borderRadius: 8, backgroundColor: '#e6ecee', marginBottom: 8, borderWidth: 1, borderColor: '#CBD5D8' },
+  targetText: { color: '#1F2933' },
+  button: { backgroundColor: '#01A9A8', padding: 12, borderRadius: 8, alignItems: 'center', marginTop: 8 },
+  buttonText: { color: '#073B3B', fontWeight: '600' },
+  ghost: { backgroundColor: '#e6ecee' },
 });

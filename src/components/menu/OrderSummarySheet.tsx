@@ -148,23 +148,23 @@ export default function OrderSummarySheet({
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{item.name}</Text>
-              {item.notes ? <Text style={{ color: '#9CA3AF', fontSize: 12 }}>Instr: {item.notes}</Text> : null}
+              {item.notes ? <Text style={{ color: '#64748B', fontSize: 12 }}>Instr: {item.notes}</Text> : null}
             </View>
             <Text style={styles.qty}>{item.quantity}×</Text>
             <Text style={styles.price}>${(item.price || 0).toFixed(2)}</Text>
-            <Pressable onPress={() => openEditItem(item)} style={{ marginLeft: 8, padding: 6, backgroundColor: '#374151', borderRadius: 6 }}>
-              <Text style={{ color: '#fff', fontSize: 12 }}>Edit</Text>
+            <Pressable onPress={() => openEditItem(item)} style={{ marginLeft: 8, padding: 6, backgroundColor: '#e6ecee', borderRadius: 6 }}>
+              <Text style={{ color: '#1F2933', fontSize: 12 }}>Edit</Text>
             </Pressable>
           </View>
         )}
       />
       <View style={{ marginTop: 8 }}>
-        <Text style={{ color: '#9CA3AF', marginBottom: 6 }}>Order instructions</Text>
+        <Text style={{ color: '#64748B', marginBottom: 6 }}>Order instructions</Text>
         <TextInput
           value={orderHook?.orderNotes || ''}
           onChangeText={(v) => orderHook?.setOrderNotes?.(v)}
           placeholder="Special instructions for this order"
-          style={{ backgroundColor: '#111827', color: '#fff', padding: 8, borderRadius: 8 }}
+          style={{ backgroundColor: '#e6ecee', color: '#1F2933', padding: 8, borderRadius: 8 }}
         />
       </View>
       <View style={styles.totalRow}>
@@ -172,28 +172,28 @@ export default function OrderSummarySheet({
         <Text style={styles.totalText}>${total.toFixed(2)}</Text>
       </View>
       <Pressable style={styles.close} onPress={onClose}>
-        <Text style={{ color: '#fff' }}>Close</Text>
+        <Text style={{ color: '#073B3B' }}>Close</Text>
       </Pressable>
       {(order || []).length > 0 && (
-        <Pressable style={[styles.close, { marginTop: 8, backgroundColor: '#2563EB' }]} onPress={handleSubmit} disabled={submitting}>
-          <Text style={{ color: '#fff' }}>{submitting ? 'Submitting...' : 'Submit Order'}</Text>
+        <Pressable style={[styles.close, { marginTop: 8 }]} onPress={handleSubmit} disabled={submitting}>
+          <Text style={{ color: '#073B3B' }}>{submitting ? 'Submitting...' : 'Submit Order'}</Text>
         </Pressable>
       )}
       {editingItemId && (
-        <View style={{ position: 'absolute', left: 16, right: 16, top: '30%', backgroundColor: '#0b1220', padding: 12, borderRadius: 8 }}>
-          <Text style={{ color: '#fff', fontWeight: '700', marginBottom: 8 }}>Item instructions</Text>
+        <View style={{ position: 'absolute', left: 16, right: 16, top: '30%', backgroundColor: '#FFFFFF', padding: 12, borderRadius: 8 }}>
+          <Text style={{ color: '#1F2933', fontWeight: '700', marginBottom: 8 }}>Item instructions</Text>
           <TextInput
             value={editingText}
             onChangeText={setEditingText}
             placeholder="Special instructions"
-            style={{ backgroundColor: '#111827', color: '#fff', padding: 8, borderRadius: 8 }}
+            style={{ backgroundColor: '#e6ecee', color: '#1F2933', padding: 8, borderRadius: 8 }}
           />
           <View style={{ flexDirection: 'row', marginTop: 8 }}>
-            <Pressable onPress={() => { setEditingItemId(null); setEditingText(''); }} style={{ flex: 1, marginRight: 8, backgroundColor: '#374151', padding: 10, borderRadius: 8, alignItems: 'center' }}>
-              <Text style={{ color: '#fff' }}>Cancel</Text>
+            <Pressable onPress={() => { setEditingItemId(null); setEditingText(''); }} style={{ flex: 1, marginRight: 8, backgroundColor: '#e6ecee', padding: 10, borderRadius: 8, alignItems: 'center' }}>
+              <Text style={{ color: '#1F2933' }}>Cancel</Text>
             </Pressable>
-            <Pressable onPress={saveItemNotes} style={{ flex: 1, backgroundColor: '#10B981', padding: 10, borderRadius: 8, alignItems: 'center' }}>
-              <Text style={{ color: '#fff' }}>Save</Text>
+            <Pressable onPress={saveItemNotes} style={{ flex: 1, backgroundColor: '#01A9A8', padding: 10, borderRadius: 8, alignItems: 'center' }}>
+              <Text style={{ color: '#073B3B' }}>Save</Text>
             </Pressable>
           </View>
         </View>
@@ -203,13 +203,13 @@ export default function OrderSummarySheet({
 }
 
 const styles = StyleSheet.create({
-  sheet: { backgroundColor: '#1f2937', padding: 16, borderRadius: 12, margin: 16 },
-  title: { color: '#fff', fontWeight: '700', fontSize: 18, marginBottom: 8 },
+  sheet: { backgroundColor: '#FFFFFF', padding: 16, borderRadius: 12, margin: 16 },
+  title: { color: '#1F2933', fontWeight: '700', fontSize: 18, marginBottom: 8 },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },
-  name: { color: '#fff' },
-  qty: { color: '#9CA3AF' },
-  price: { color: '#fff' },
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, borderTopWidth: 1, borderTopColor: '#374151', paddingTop: 12 },
-  totalText: { color: '#fff', fontWeight: '700' },
-  close: { marginTop: 12, backgroundColor: '#10B981', padding: 12, borderRadius: 8, alignItems: 'center' },
+  name: { color: '#1F2933' },
+  qty: { color: '#64748B' },
+  price: { color: '#1F2933' },
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, borderTopWidth: 1, borderTopColor: '#CBD5D8', paddingTop: 12 },
+  totalText: { color: '#1F2933', fontWeight: '700' },
+  close: { marginTop: 12, backgroundColor: '#01A9A8', padding: 12, borderRadius: 8, alignItems: 'center' },
 });

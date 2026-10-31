@@ -136,7 +136,7 @@ export default function TablesScreen() {
     const reserved = item.status === 'reserved' && item.reserved_for;
     const statusColor = (() => {
       switch (item.status) {
-        case 'available': return '#10B981';
+        case 'available': return '#01A9A8';
         case 'occupied':  return '#EF4444';
         case 'reserved':  return '#F59E0B';
         case 'cleaning':  return '#3B82F6';
@@ -161,7 +161,7 @@ export default function TablesScreen() {
               </View>
               {!isHallManager?.() && (
                 <Pressable onPress={() => { setSelectedTable(item); setShowEdit(true); }} style={styles.iconButton}>
-                  <MaterialIcon name="edit" size={18} color="#fff" />
+                  <MaterialIcon name="edit" size={18} color="#1F2933" />
                 </Pressable>
               )}
             </View>
@@ -199,7 +199,7 @@ export default function TablesScreen() {
       {!isHallManager?.() && (
         <View style={styles.headerBar}>
           <Pressable style={styles.addButton} onPress={() => setShowAdd(true)}>
-            <MaterialIcon name="add" size={16} color="#fff" />
+            <MaterialIcon name="add" size={16} color="#073B3B" />
             <Text style={styles.addButtonText}>{t('tables.addTable','Add Table')}</Text>
           </Pressable>
         </View>
@@ -218,7 +218,7 @@ export default function TablesScreen() {
         <>
           <AddUnitSheet visible={showAdd} onClose={() => setShowAdd(false)} branchId={branchId} onAdded={() => queryClient.invalidateQueries({ queryKey: ['tables'] })} />
           <Pressable style={styles.fab} onPress={() => setShowAdd(true)}>
-            <MaterialIcon name="add" size={20} color="#fff" />
+            <MaterialIcon name="add" size={20} color="#073B3B" />
           </Pressable>
         </>
       )}
@@ -232,34 +232,34 @@ export default function TablesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#111827' },
+  container: { flex: 1, backgroundColor: '#F7F9FA' },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyText: { color: '#9CA3AF' },
+  emptyText: { color: '#64748B' },
   tableRow: { justifyContent: 'flex-start' },
   gridCell: { paddingHorizontal: 6 },
-  card: { width: '100%', backgroundColor: '#0f1724', borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#374151', minHeight: 140 },
+  card: { width: '100%', backgroundColor: '#e6ecee', borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#CBD5D8', minHeight: 140 },
   cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerLeft: { flex: 1 },
   headerRight: { flexDirection: 'row', alignItems: 'center' },
-  tableTitle: { color: '#fff', fontSize: 18, fontWeight: '600' },
+  tableTitle: { color: '#1F2933', fontSize: 18, fontWeight: '600' },
   badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, marginLeft: 8 },
   badgeText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   iconButton: { marginLeft: 8, padding: 6 },
   reservedText: { color: '#F59E0B', marginTop: 8, fontSize: 13 },
   reservedTextSmall: { color: '#F59E0B', marginTop: 4, fontSize: 12 },
   actions: { marginTop: 12 },
-  primary: { backgroundColor: '#10B981', paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginTop: 12 },
-  primaryText: { color: '#fff', fontWeight: '700' },
-  outline: { backgroundColor: '#111827', borderColor: '#374151', borderWidth: 1, paddingVertical: 12, borderRadius: 8, marginTop: 8, alignItems: 'center' },
-  outlineText: { color: '#fff' },
+  primary: { backgroundColor: '#01A9A8', paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginTop: 12 },
+  primaryText: { color: '#073B3B', fontWeight: '700' },
+  outline: { backgroundColor: '#FFFFFF', borderColor: '#CBD5D8', borderWidth: 1, paddingVertical: 12, borderRadius: 8, marginTop: 8, alignItems: 'center' },
+  outlineText: { color: '#1F2933' },
   disabled: { opacity: 0.5 },
-  outlineTextDisabled: { color: '#9CA3AF' },
+  outlineTextDisabled: { color: '#64748B' },
   rowTwo: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
-  smallBtn: { flex: 1, borderRadius: 8, paddingVertical: 10, alignItems: 'center', marginHorizontal: 4, backgroundColor: '#111827', borderWidth: 1, borderColor: '#374151' },
-  smallBtnText: { color: '#fff', fontWeight: '600' },
-  smallBtnTextDisabled: { color: '#9CA3AF' },
-  fab: { position: 'absolute', right: 20, bottom: 28, backgroundColor: '#10B981', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 6, elevation: 6 },
+  smallBtn: { flex: 1, borderRadius: 8, paddingVertical: 10, alignItems: 'center', marginHorizontal: 4, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CBD5D8' },
+  smallBtnText: { color: '#1F2933', fontWeight: '600' },
+  smallBtnTextDisabled: { color: '#64748B' },
+  fab: { position: 'absolute', right: 20, bottom: 28, backgroundColor: '#01A9A8', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 6, elevation: 6 },
   headerBar: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'transparent' },
-  addButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#10B981', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, alignSelf: 'flex-start' },
-  addButtonText: { color: '#fff', marginLeft: 8, fontWeight: '700' },
+  addButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#01A9A8', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, alignSelf: 'flex-start' },
+  addButtonText: { color: '#073B3B', marginLeft: 8, fontWeight: '700' },
 });

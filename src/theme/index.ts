@@ -11,43 +11,43 @@
 export const COLORS = {
   // Primary Colors
   primary: {
-    main: '#22c55e', // Green accent - used for CTAs and highlights
-    dark: '#16a34a', // Darker green for pressed state
-    light: '#4ade80', // Lighter green for hover state
+    main: '#01A9A8',
+    dark: '#008786',
+    light: '#D5F3F2',
   },
 
   // Background Colors
   background: {
-    primary: '#1a1f2e', // Dark navy - main background
-    secondary: '#0f1419', // Even darker for depth
+    primary: '#F7F9FA',
+    secondary: '#FFFFFF',
   },
 
   // Surface Colors (Cards, modals, containers)
   surface: {
-    primary: '#2d3a4f', // Card background
-    secondary: '#3d4a5f', // Input fields and secondary surfaces
-    tertiary: '#4a5a72', // Hover/pressed state for surfaces
+    primary: '#FFFFFF',
+    secondary: '#e6ecee',
+    tertiary: '#D5E0E2',
   },
 
   // Text Colors
   text: {
-    primary: '#ffffff', // Main text
-    secondary: '#e0e3e8', // Secondary text (labels)
-    tertiary: '#8b92a0', // Placeholder and hint text
-    disabled: '#5a6370', // Disabled state text
+    primary: '#1F2933',
+    secondary: '#475569',
+    tertiary: '#64748B',
+    disabled: '#94A3B8',
   },
 
   // Semantic Colors
-  success: '#22c55e',
+  success: '#01A9A8',
   error: '#ef4444',
   warning: '#f59e0b',
   info: '#3b82f6',
 
   // Borders
   border: {
-    light: '#4a5a72',
-    medium: '#3d4a5f',
-    dark: '#2d3a4f',
+    light: '#D5E0E2',
+    medium: '#CBD5D8',
+    dark: '#E6ECEE',
   },
 
   // Overlay
@@ -265,9 +265,9 @@ export const SHADOWS = {
   elevationLg: { elevation: 8 },
   elevationXl: { elevation: 12 },
 
-  // Green Glow (for primary elements)
-  glowGreen: {
-    shadowColor: '#22c55e',
+  // Accent glow for primary elements
+  glowAccent: {
+    shadowColor: '#01A9A8',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -306,7 +306,7 @@ export const COMPONENT_STYLES = {
     borderRadius: RADIUS.sm,
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
-    ...SHADOWS.glowGreen,
+    ...SHADOWS.glowAccent,
   },
 
   // Button secondary

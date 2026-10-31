@@ -13,17 +13,17 @@ import StatusPill from '../components/menu/StatusPill';
 import { MenuItem, Category, Subcategory } from '../types/menu';
 
 const COLORS = {
-  bg: '#0B1220',
-  panel: '#0F172A',
-  card: '#1F2937',
-  cardBorder: '#374151',
-  chip: '#1F2937',
-  chipActive: '#10B981',
-  accent: '#10B981',
+  bg: '#F7F9FA',
+  panel: '#FFFFFF',
+  card: '#e6ecee',
+  cardBorder: '#CBD5D8',
+  chip: '#e6ecee',
+  chipActive: '#01A9A8',
+  accent: '#01A9A8',
   danger: '#EF4444',
-  text: '#F9FAFB',
-  textDim: '#9CA3AF',
-  badgeBlue: '#10B981',
+  text: '#1F2933',
+  textDim: '#64748B',
+  badgeBlue: '#01A9A8',
 };
 
 export default function MenuScreen({ route, navigation }: any) {
@@ -321,7 +321,7 @@ export default function MenuScreen({ route, navigation }: any) {
                 onPress={() => setSelectedCategory(c.value)}
                 style={[styles.chip, styles.tabletChip, active && styles.chipActive]}
               >
-                <Text style={[styles.chipText, styles.tabletChipText, active && { color: '#fff' }]}>
+                <Text style={[styles.chipText, styles.tabletChipText, active && { color: '#073B3B' }]}>
                   {c.label}
                 </Text>
                 <View style={styles.chipCount}>
@@ -342,7 +342,7 @@ export default function MenuScreen({ route, navigation }: any) {
                 onPress={() => setSelectedCategory(c.value)}
                 style={[styles.chip, active && styles.chipActive]}
               >
-                <Text style={[styles.chipText, active && { color: '#fff' }]}>{c.label}</Text>
+                <Text style={[styles.chipText, active && { color: '#073B3B' }]}>{c.label}</Text>
                 <View style={styles.chipCount}>
                   <Text style={styles.chipCountText}>{count}</Text>
                 </View>
@@ -648,7 +648,7 @@ export default function MenuScreen({ route, navigation }: any) {
                 <Text style={{ color: COLORS.text, fontWeight: '700' }}>Cancel</Text>
               </Pressable>
               <Pressable style={[styles.submitBtn]} onPress={confirmItemNotes}>
-                <Text style={{ color: '#fff', fontWeight: '800' }}>Save</Text>
+                <Text style={{ color: '#073B3B', fontWeight: '800' }}>Save</Text>
               </Pressable>
             </View>
           </View>
@@ -679,7 +679,7 @@ const styles = StyleSheet.create({
   },
   tabletMenuHeader: { backgroundColor: COLORS.bg },
   cancelButton: { flexDirection: 'row', alignItems: 'center', gap: 6, minWidth: 84 },
-  cancelText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  cancelText: { color: COLORS.text, fontWeight: '700', fontSize: 15 },
   screenTitle: { color: COLORS.text, fontSize: 20, fontWeight: '800', flex: 1, textAlign: 'center' },
   headerSpacer: { minWidth: 84 },
   callStatus: { width: '100%', marginTop: 8 },
@@ -725,7 +725,7 @@ const styles = StyleSheet.create({
   tabletChipCountText: { color: COLORS.textDim, fontSize: 10 },
   chipText: { color: COLORS.text, fontWeight: '700' },
   chipCount: { marginTop: 2 },
-  chipCountText: { color: 'rgba(255,255,255,0.7)', fontSize: 11 },
+  chipCountText: { color: COLORS.textDim, fontSize: 11 },
 
   // Order panel
   orderPanel: {
@@ -745,12 +745,12 @@ const styles = StyleSheet.create({
   mobileCartContainer: { flexShrink: 0 },
   orderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, minHeight: 34 },
   branchBadge: { backgroundColor: COLORS.badgeBlue, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 6 },
-  branchBadgeText: { color: '#fff', fontWeight: '700' },
+  branchBadgeText: { color: '#073B3B', fontWeight: '700' },
   countBadge: {
     backgroundColor: COLORS.accent, width: 28, height: 28, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
   },
-  countBadgeText: { color: '#fff', fontWeight: '800' },
+  countBadgeText: { color: '#073B3B', fontWeight: '800' },
 
   orderTypeBtn: {
     borderWidth: 1, borderColor: COLORS.accent, borderRadius: 8,
@@ -776,7 +776,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder,
   },
   selectedCartRow: {
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    backgroundColor: 'rgba(1, 169, 168, 0.12)',
     borderRadius: 6,
     paddingHorizontal: 6,
   },
