@@ -1,0 +1,9 @@
+{
+  "name": "Hexa POS Nexus",
+  "short_name": "Hexa POS",
+  "start_url": ".",
+  "scope": "/",
+  "display": "fullscreen",
+  "background_color": "#1a1f2e",
+  "theme_color": "#1a1f2e"
+}
