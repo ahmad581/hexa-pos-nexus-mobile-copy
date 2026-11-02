@@ -17,7 +17,6 @@ import { useAuth } from '../hooks/useAuth';
 import { useBranch } from '../hooks/useBranch';
 import { useRole } from '../hooks/useRole';
 import { useTranslation } from '../hooks/useTranslation';
-import { useOrder } from '../hooks';
 import { useRealtimeSubscription } from '../hooks/useRealtimeSubscription';
 
 import AddUnitSheet from '../components/tables/AddUnitSheet';
@@ -34,8 +33,6 @@ export default function TablesScreen() {
   const { user } = useAuth() as any;
   const branch = useBranch() as any;
   const { isHallManager } = useRole() as any;
-  const order = useOrder() as any;
-
   const branchId = branch?.id || null;
 
   const { data: tables = [], isLoading: loadingTables } = useQuery(
@@ -57,9 +54,10 @@ export default function TablesScreen() {
     async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id,table_id,status')
+        .select('id,table_id,status,created_at')
         .eq('branch_id', branchId)
-        .in('status', ['pending', 'preparing', 'ready']);
+        .in('status', ['pending', 'preparing', 'ready'])
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
     },
@@ -110,21 +108,13 @@ export default function TablesScreen() {
     return tablesWithOrders.has(tableId);
   }
 
-  const handlePrimary = async (table: any) => {
-    try {
-      order.setOrderType('dine-in');
-      order.setSelectedTable(table);
-      if (branchId && order.loadOrderForEditingById) {
-        await order.loadOrderForEditingById(String(table.table_number));
-      }
-    } catch (e) {
-      // ignore
-    }
-
+  const handlePrimary = (table: any) => {
+    const activeOrder = (activeOrders as any[]).find((active) => active.table_id === table.id);
     try {
       (navigation as any).navigate('Menu', {
         tableId: table.id,
         tableNumber: table.table_number,
+        editingOrderId: activeOrder?.id ?? null,
         origin: '/tables',
       });
     } catch (e) {
@@ -173,7 +163,9 @@ export default function TablesScreen() {
 
           <View style={styles.actions}>
             <Pressable style={styles.primary} onPress={() => handlePrimary(item)}>
-              <Text style={styles.primaryText}>{hasOrders(item.id) ? t('tables.takeOrder','Take Order') : t('tables.addOrder','Add Order')}</Text>
+              <Text style={styles.primaryText}>
+                {hasOrders(item.id) ? t('tables.editOrder', 'Edit Order') : t('tables.takeOrder', 'Take Order')}
+              </Text>
             </Pressable>
 
             <Pressable style={[styles.outline, !hasOrders(item.id) && styles.disabled]} onPress={() => { setSelectedTable(item); setShowOrderDetails(true); }} disabled={!hasOrders(item.id)}>

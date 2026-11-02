@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  View, Text, FlatList, StyleSheet, Pressable, useWindowDimensions,
+  View, Text, FlatList, StyleSheet, Pressable, useWindowDimensions, ActivityIndicator,
   RefreshControl, ScrollView, Alert, TextInput, Modal,
 } from 'react-native';
 import MaterialIcon from '../lib/Icon';
@@ -55,6 +55,8 @@ export default function MenuScreen({ route, navigation }: any) {
   const [quantityEntryStarted, setQuantityEntryStarted] = useState(false);
   const [quantityEditItemId, setQuantityEditItemId] = useState<string | null>(null);
   const [quantityBeforeEdit, setQuantityBeforeEdit] = useState<{ value: string; started: boolean } | null>(null);
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+  const submissionLock = useRef(false);
 
   // ---- Per-line (cart item) notes editor ----
   const [noteCartIndex, setNoteCartIndex] = useState<number | null>(null);
@@ -141,7 +143,6 @@ export default function MenuScreen({ route, navigation }: any) {
   useEffect(() => {
     const params = (route && route.params) || {};
     const { editingOrderId, tableNumber, tableId, origin } = params;
-    if (editingOrderId) { setOriginRoute('/orders'); loadOrderForEditingById(editingOrderId); }
     if (tableNumber) {
       setOrderType('dine-in');
       if (!selectedTable || selectedTable.table_number !== tableNumber || !selectedTable.id) {
@@ -149,6 +150,15 @@ export default function MenuScreen({ route, navigation }: any) {
       }
       setOriginRoute(origin || '/tables');
     } else if (origin) setOriginRoute(origin);
+
+    if (editingOrderId) {
+      clearCurrentOrder();
+      loadOrderForEditingById(editingOrderId).catch((error: any) => {
+        Alert.alert('Error', error?.message || 'Failed to load the order for editing.');
+      });
+    } else if (tableNumber) {
+      clearCurrentOrder();
+    }
   }, [route]);
 
   useEffect(() => {
@@ -252,12 +262,15 @@ export default function MenuScreen({ route, navigation }: any) {
   };
 
   const submitOrder = async () => {
+    if (submissionLock.current) return;
     if (quantityEditItemId) {
       Alert.alert('Finish quantity edit', 'Confirm or cancel the current quantity edit first.');
       return;
     }
     if (!branchId) return Alert.alert('Missing branch');
     if (!currentOrder?.length) return Alert.alert('No items');
+    submissionLock.current = true;
+    setIsSubmittingOrder(true);
     try {
       let tableId: string | null = null;
       let tableNumber: string | undefined;
@@ -314,7 +327,7 @@ export default function MenuScreen({ route, navigation }: any) {
         notes: item.notes || null,
       }));
       const { data: savedOrder, error: saveError } = await supabase.rpc('save_order_with_print_request', {
-        _order_id: null,
+        _order_id: route?.params?.editingOrderId ?? null,
         _order: payload,
         _items: items,
         _print_payload: {
@@ -344,6 +357,9 @@ export default function MenuScreen({ route, navigation }: any) {
       }
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to submit order');
+    } finally {
+      submissionLock.current = false;
+      setIsSubmittingOrder(false);
     }
   };
 
@@ -554,13 +570,21 @@ export default function MenuScreen({ route, navigation }: any) {
           style={[
             styles.submitBtn,
             isTablet && styles.tabletSubmitBtn,
-            (!currentOrder?.length || quantityEditItemId) && { opacity: 0.5 },
+            (!currentOrder?.length || quantityEditItemId || isSubmittingOrder) && { opacity: 0.5 },
           ]}
-          onPress={submitOrder} disabled={!currentOrder?.length || !!quantityEditItemId}
+          onPress={submitOrder}
+          disabled={!currentOrder?.length || !!quantityEditItemId || isSubmittingOrder}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !currentOrder?.length || !!quantityEditItemId || isSubmittingOrder, busy: isSubmittingOrder }}
         >
-          <Text style={{ color: COLORS.text }}>
-            Submit
-          </Text>
+          {isSubmittingOrder ? (
+            <>
+              <ActivityIndicator size="small" color={COLORS.text} />
+              <Text style={{ color: COLORS.text, marginLeft: 8 }}>Submitting...</Text>
+            </>
+          ) : (
+            <Text style={{ color: COLORS.text }}>Submit</Text>
+          )}
         </Pressable>
       </View>
     </View>
@@ -869,7 +893,7 @@ const styles = StyleSheet.create({
   tabletActionGhost: { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder },
   submitBtn: {
     flex: 1, height: 44, backgroundColor: COLORS.accent, borderRadius: 8,
-    alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
   },
   tabletSubmitBtn: { backgroundColor: COLORS.accent, borderRadius: 5 },
   quantityPad: {

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, FlatList, Alert, TextInput } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, Pressable, StyleSheet, FlatList, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useOrder } from '../../hooks';
@@ -34,6 +34,7 @@ export default function OrderSummarySheet({
   editingOrderId: editingOrderIdProp,
 }: Props) {
   const [submitting, setSubmitting] = useState(false);
+  const submissionLock = useRef(false);
   const navigation = useNavigation<any>();
   const orderHook = useOrder() as any;
   const branchHook = useBranch() as any;
@@ -58,7 +59,8 @@ export default function OrderSummarySheet({
     editingOrderIdProp !== undefined ? editingOrderIdProp : orderHook?.editingOrderId ?? null;
 
   const handleSubmit = async () => {
-    if (submitting) return;
+    if (submissionLock.current) return;
+    submissionLock.current = true;
     setSubmitting(true);
 
     try {
@@ -121,6 +123,7 @@ export default function OrderSummarySheet({
         // ignore navigation errors
       }
     } finally {
+      submissionLock.current = false;
       setSubmitting(false);
     }
   };
@@ -175,8 +178,21 @@ export default function OrderSummarySheet({
         <Text style={{ color: '#073B3B' }}>Close</Text>
       </Pressable>
       {(order || []).length > 0 && (
-        <Pressable style={[styles.close, { marginTop: 8 }]} onPress={handleSubmit} disabled={submitting}>
-          <Text style={{ color: '#073B3B' }}>{submitting ? 'Submitting...' : 'Submit Order'}</Text>
+        <Pressable
+          style={[styles.close, { marginTop: 8, opacity: submitting ? 0.7 : 1 }]}
+          onPress={handleSubmit}
+          disabled={submitting}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: submitting, busy: submitting }}
+        >
+          {submitting ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <ActivityIndicator size="small" color="#073B3B" />
+              <Text style={{ color: '#073B3B', marginLeft: 8 }}>Submitting...</Text>
+            </View>
+          ) : (
+            <Text style={{ color: '#073B3B' }}>Submit Order</Text>
+          )}
         </Pressable>
       )}
       {editingItemId && (

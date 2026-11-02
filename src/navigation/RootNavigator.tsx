@@ -9,7 +9,12 @@ import MenuScreen from '../screens/MenuScreen';
 export type RootStackParamList = {
   Login: undefined;
   App: undefined;
-  Menu: { tableNumber?: string; editingOrderId?: string } | undefined;
+  Menu: {
+    tableId?: string;
+    tableNumber?: string | number;
+    editingOrderId?: string | null;
+    origin?: string;
+  } | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
