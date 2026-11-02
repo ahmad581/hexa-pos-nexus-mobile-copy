@@ -259,42 +259,78 @@ export default function MenuScreen({ route, navigation }: any) {
     if (!branchId) return Alert.alert('Missing branch');
     if (!currentOrder?.length) return Alert.alert('No items');
     try {
-      const payload: any = {
+      let tableId: string | null = null;
+      let tableNumber: string | undefined;
+      if (selectedTable) {
+        const table = typeof selectedTable === 'object'
+          ? selectedTable as { id?: string; table_number?: string | number }
+          : null;
+        tableId = table?.id ?? null;
+        tableNumber = typeof selectedTable === 'string'
+          ? selectedTable
+          : table?.table_number != null ? String(table.table_number) : undefined;
+
+        if (!tableId && tableNumber) {
+          const { data: tableData, error: tableLookupError } = await supabase
+            .from('tables')
+            .select('id')
+            .eq('branch_id', branchId)
+            .eq('table_number', tableNumber)
+            .maybeSingle();
+          if (tableLookupError) throw tableLookupError;
+          tableId = tableData?.id ?? null;
+        } else if (tableId && !tableNumber) {
+          const { data: tableData, error: tableLookupError } = await supabase
+            .from('tables')
+            .select('table_number')
+            .eq('id', tableId)
+            .maybeSingle();
+          if (tableLookupError) throw tableLookupError;
+          if (tableData?.table_number != null) tableNumber = String(tableData.table_number);
+        }
+
+        if (!tableId) throw new Error('Could not find the selected table.');
+      }
+
+      const payload = {
         branch_id: branchId,
         order_number: `ORD-${Date.now().toString(36).toUpperCase()}`,
+        table_id: tableId,
+        customer_name: null,
+        customer_phone: null,
+        customer_address: null,
+        delivery_address: null,
+        delivery_place_id: null,
+        delivery_fee: 0,
+        payment_status: 'pending',
         total_amount: orderTotal,
-        status: 'pending',
         notes: notes || null,
-        created_at: new Date().toISOString(),
       };
+      const items = currentOrder.map((item: any) => ({
+        id: item.id,
+        name: item.name || '',
+        price: Number(item.price) || 0,
+        quantity: Number(item.quantity) || 1,
+        notes: item.notes || null,
+      }));
+      const { data: savedOrder, error: saveError } = await supabase.rpc('save_order_with_print_request', {
+        _order_id: null,
+        _order: payload,
+        _items: items,
+        _print_payload: {
+          items,
+          tableNumber,
+          orderType: tableId ? 'dine-in' : orderTypeLocal.trim().toLowerCase().replace(/\s+/g, '-'),
+          businessName: selectedBranch?.name || undefined,
+        },
+      });
+      if (saveError) throw saveError;
+      if (!savedOrder) throw new Error('Order and print request were not saved.');
 
-      if (selectedTable) {
-        const st = selectedTable as any;
-        let resolvedTableId: string | null = st.id ?? null;
-        if (!resolvedTableId && st.table_number != null) {
-          const { data: tbl } = await supabase.from('tables').select('id')
-            .eq('branch_id', branchId).eq('table_number', String(st.table_number)).maybeSingle();
-          resolvedTableId = tbl?.id ?? null;
-        }
-        if (resolvedTableId) payload.table_id = resolvedTableId;
-      }
-
-      const { data: inserted, error } = await supabase.from('orders').insert(payload).select().single();
-      if (error) throw error;
-
-      if (inserted?.id && currentOrder.length) {
-        const itemsPayload = currentOrder.map((it: any) => ({
-          order_id: inserted.id, menu_item_id: it.id, product_name: it.name || '',
-          quantity: it.quantity || 1, unit_price: it.price,
-          total_price: Number(it.price || 0) * (it.quantity || 1),
-          special_instructions: it.notes || null,
-        }));
-        const { error: itemsError } = await supabase.from('order_items').insert(itemsPayload);
-        if (itemsError) throw itemsError;
-      }
-
-      if (payload.table_id) {
-        await supabase.from('tables').update({ status: 'occupied' }).eq('id', payload.table_id);
+      let tableStatusError: { message?: string } | null = null;
+      if (tableId) {
+        const { error } = await supabase.from('tables').update({ status: 'occupied' }).eq('id', tableId);
+        tableStatusError = error;
       }
 
       await queryClient.refetchQueries({ queryKey: ['table-orders', branchId] });
@@ -303,6 +339,9 @@ export default function MenuScreen({ route, navigation }: any) {
       cancelQuantityEdit();
       setNotes('');
       navigation?.navigate?.('App', { screen: 'Tables' });
+      if (tableStatusError) {
+        Alert.alert('Order submitted', `The order was queued for printing, but the table status could not be updated: ${tableStatusError.message || 'Unknown error'}`);
+      }
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to submit order');
     }
