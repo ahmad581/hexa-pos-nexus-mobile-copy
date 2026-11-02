@@ -1,9 +1,24 @@
 {
   "name": "Hexa POS Nexus",
   "short_name": "Hexa POS",
-  "start_url": ".",
+  "id": "/",
+  "start_url": "/",
   "scope": "/",
   "display": "fullscreen",
   "background_color": "#1a1f2e",
-  "theme_color": "#1a1f2e"
+  "theme_color": "#1a1f2e",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
 }
